@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alpaca Trader Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+        }
+
+        header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #f8fafc;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
+        }
+
+        .market-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .status-open { background: #065f46; color: #6ee7b7; }
+        .status-closed { background: #7f1d1d; color: #fca5a5; }
+
+        .scheduler-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .scheduler-running { background: #1e3a5f; color: #93c5fd; }
+        .scheduler-stopped { background: #3f3f46; color: #a1a1aa; }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Account Cards */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .card-label {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .card-value {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+            color: #f8fafc;
+        }
+
+        /* Charts */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .chart-container {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        .period-buttons {
+            display: flex;
+            gap: 4px;
+        }
+
+        .period-btn {
+            background: #334155;
+            border: none;
+            color: #94a3b8;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .period-btn:hover { background: #475569; color: #e2e8f0; }
+        .period-btn.active { background: #2563eb; color: #fff; }
+
+        .chart-wrap {
+            position: relative;
+            height: 250px;
+        }
+
+        /* Tables */
+        .section {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #334155;
+            font-size: 14px;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            padding: 10px 16px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #334155;
+        }
+
+        td {
+            padding: 12px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid #1e293b;
+            font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+        }
+
+        tr:hover { background: #253348; }
+
+        .positive { color: #4ade80; }
+        .negative { color: #f87171; }
+
+        .signal-buy { background: rgba(34, 197, 94, 0.08); }
+        .signal-sell { background: rgba(239, 68, 68, 0.08); }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-buy { background: #065f46; color: #6ee7b7; }
+        .badge-sell { background: #7f1d1d; color: #fca5a5; }
+        .badge-hold { background: #3f3f46; color: #a1a1aa; }
+
+        .side-buy { color: #4ade80; }
+        .side-sell { color: #f87171; }
+
+        .strength-bar {
+            display: inline-block;
+            height: 6px;
+            border-radius: 3px;
+            background: #334155;
+            width: 60px;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .strength-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: #3b82f6;
+        }
+
+        .details-cell {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 16px;
+            color: #475569;
+            font-size: 12px;
+        }
+
+        .loading {
+            color: #64748b;
+            font-style: italic;
+        }
+
+        @media (max-width: 900px) {
+            .charts-row { grid-template-columns: 1fr; }
+            .cards { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Alpaca Trader Dashboard</h1>
+        <div class="header-right">
+            <span id="scheduler-badge" class="scheduler-badge scheduler-stopped">Scheduler: --</span>
+            <span id="market-status" class="market-status status-closed">Market: --</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Account Cards -->
+        <div class="cards">
+            <div class="card">
+                <div class="card-label">Equity</div>
+                <div class="card-value" id="equity">--</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Cash</div>
+                <div class="card-value" id="cash">--</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Buying Power</div>
+                <div class="card-value" id="buying-power">--</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Portfolio Value</div>
+                <div class="card-value" id="portfolio-value">--</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-row">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <span class="chart-title">Equity</span>
+                    <div class="period-buttons">
+                        <button class="period-btn" data-period="1W">1W</button>
+                        <button class="period-btn active" data-period="1M">1M</button>
+                        <button class="period-btn" data-period="3M">3M</button>
+                        <button class="period-btn" data-period="1A">1Y</button>
+                    </div>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="equity-chart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-header">
+                    <span class="chart-title">Daily P&L</span>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="pl-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signals -->
+        <div class="section">
+            <div class="section-header">Live Signals</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Signal</th>
+                        <th>Strength</th>
+                        <th>Indicator Details</th>
+                    </tr>
+                </thead>
+                <tbody id="signals-body">
+                    <tr><td colspan="6" class="empty-state loading">Loading signals...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Positions -->
+        <div class="section">
+            <div class="section-header">Open Positions</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Qty</th>
+                        <th>Market Value</th>
+                        <th>Avg Entry</th>
+                        <th>P&L</th>
+                        <th>P&L %</th>
+                    </tr>
+                </thead>
+                <tbody id="positions-body">
+                    <tr><td colspan="6" class="empty-state loading">Loading positions...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Trade History -->
+        <div class="section">
+            <div class="section-header">Trade History</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Symbol</th>
+                        <th>Side</th>
+                        <th>Qty</th>
+                        <th>Fill Price</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="orders-body">
+                    <tr><td colspan="6" class="empty-state loading">Loading trade history...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        Auto-refreshes every 30s &middot; Last update: <span id="last-update">--</span>
+    </footer>
+
+    <script>
+        // --- Utility ---
+        function fmt(n) {
+            if (n == null) return '--';
+            return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        async function fetchJSON(url) {
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return resp.json();
+        }
+
+        function updateTimestamp() {
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+        }
+
+        // --- Account ---
+        async function refreshAccount() {
+            try {
+                const d = await fetchJSON('/api/account');
+                document.getElementById('equity').textContent = '$' + fmt(d.equity);
+                document.getElementById('cash').textContent = '$' + fmt(d.cash);
+                document.getElementById('buying-power').textContent = '$' + fmt(d.buying_power);
+                document.getElementById('portfolio-value').textContent = '$' + fmt(d.portfolio_value);
+
+                const ms = document.getElementById('market-status');
+                if (d.market_open) {
+                    ms.textContent = 'Market: Open';
+                    ms.className = 'market-status status-open';
+                } else {
+                    ms.textContent = 'Market: Closed';
+                    ms.className = 'market-status status-closed';
+                }
+                updateTimestamp();
+            } catch (e) {
+                console.error('Account refresh failed:', e);
+            }
+        }
+
+        // --- Scheduler Status ---
+        async function refreshScheduler() {
+            try {
+                const d = await fetchJSON('/api/scheduler-status');
+                const badge = document.getElementById('scheduler-badge');
+                if (d.running) {
+                    badge.textContent = 'Scheduler: Running';
+                    badge.className = 'scheduler-badge scheduler-running';
+                } else {
+                    badge.textContent = 'Scheduler: Off';
+                    badge.className = 'scheduler-badge scheduler-stopped';
+                }
+            } catch (e) {
+                console.error('Scheduler status failed:', e);
+            }
+        }
+
+        // --- Positions ---
+        async function refreshPositions() {
+            try {
+                const data = await fetchJSON('/api/positions');
+                const tbody = document.getElementById('positions-body');
+                if (!data.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No open positions</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.forEach(p => {
+                    const plClass = p.unrealized_pl >= 0 ? 'positive' : 'negative';
+                    const plSign = p.unrealized_pl >= 0 ? '+' : '';
+                    const pctSign = p.unrealized_plpc >= 0 ? '+' : '';
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${p.symbol}</td>
+                        <td>${fmt(p.qty)}</td>
+                        <td>$${fmt(p.market_value)}</td>
+                        <td>$${fmt(p.avg_entry)}</td>
+                        <td class="${plClass}">${plSign}$${fmt(p.unrealized_pl)}</td>
+                        <td class="${plClass}">${pctSign}${(p.unrealized_plpc * 100).toFixed(2)}%</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                updateTimestamp();
+            } catch (e) {
+                console.error('Positions refresh failed:', e);
+            }
+        }
+
+        // --- Signals ---
+        async function refreshSignals() {
+            try {
+                const data = await fetchJSON('/api/signals');
+                const tbody = document.getElementById('signals-body');
+                if (!data.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No signals available</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.forEach(s => {
+                    const row = document.createElement('tr');
+                    if (s.action === 'buy') row.className = 'signal-buy';
+                    else if (s.action === 'sell') row.className = 'signal-sell';
+
+                    const badgeClass = s.action === 'buy' ? 'badge-buy' : s.action === 'sell' ? 'badge-sell' : 'badge-hold';
+
+                    // Format indicator details
+                    const details = Object.entries(s.details || {})
+                        .map(([k, v]) => {
+                            const label = k.replace('_signal', '').toUpperCase();
+                            const val = v || 'N/A';
+                            return `<span>${label}: ${val}</span>`;
+                        }).join(' &middot; ');
+
+                    row.innerHTML = `
+                        <td><strong>${s.symbol}</strong></td>
+                        <td>${s.name}</td>
+                        <td>$${s.price ? fmt(s.price) : '--'}</td>
+                        <td><span class="badge ${badgeClass}">${s.action}</span></td>
+                        <td>
+                            <span class="strength-bar"><span class="strength-fill" style="width:${s.strength}%"></span></span>
+                            ${s.strength}%
+                        </td>
+                        <td class="details-cell">${details}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                updateTimestamp();
+            } catch (e) {
+                console.error('Signals refresh failed:', e);
+            }
+        }
+
+        // --- Orders ---
+        async function refreshOrders() {
+            try {
+                const data = await fetchJSON('/api/orders');
+                const tbody = document.getElementById('orders-body');
+                if (!data.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No trade history</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.forEach(o => {
+                    const row = document.createElement('tr');
+                    const sideClass = o.side === 'buy' ? 'side-buy' : 'side-sell';
+                    const time = o.filled_at
+                        ? new Date(o.filled_at).toLocaleString()
+                        : o.submitted_at
+                            ? new Date(o.submitted_at).toLocaleString()
+                            : '--';
+                    row.innerHTML = `
+                        <td>${time}</td>
+                        <td>${o.symbol}</td>
+                        <td class="${sideClass}">${(o.side || '').toUpperCase()}</td>
+                        <td>${o.qty || '--'}</td>
+                        <td>${o.filled_avg_price ? '$' + fmt(parseFloat(o.filled_avg_price)) : '--'}</td>
+                        <td>${o.status}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                updateTimestamp();
+            } catch (e) {
+                console.error('Orders refresh failed:', e);
+            }
+        }
+
+        // --- Charts ---
+        let equityChart = null;
+        let plChart = null;
+
+        async function refreshCharts(period) {
+            period = period || '1M';
+            try {
+                const data = await fetchJSON('/api/portfolio-history?period=' + period);
+
+                if (!data.timestamp || !data.timestamp.length) {
+                    return;
+                }
+
+                const labels = data.timestamp.map(ts => {
+                    const d = new Date(ts * 1000);
+                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
+
+                const chartDefaults = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#64748b', maxTicksLimit: 10, font: { size: 10 } },
+                            grid: { color: '#1e293b' },
+                        },
+                        y: {
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 10 },
+                                callback: v => '$' + Number(v).toLocaleString()
+                            },
+                            grid: { color: '#334155' },
+                        }
+                    }
+                };
+
+                // Equity chart
+                if (equityChart) equityChart.destroy();
+                const eqCtx = document.getElementById('equity-chart').getContext('2d');
+                equityChart = new Chart(eqCtx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data.equity,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 0,
+                            borderWidth: 2,
+                        }]
+                    },
+                    options: chartDefaults
+                });
+
+                // P&L chart
+                if (plChart) plChart.destroy();
+                const plCtx = document.getElementById('pl-chart').getContext('2d');
+                const plColors = (data.profit_loss || []).map(v =>
+                    v >= 0 ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)'
+                );
+                plChart = new Chart(plCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data.profit_loss || [],
+                            backgroundColor: plColors,
+                            borderRadius: 2,
+                        }]
+                    },
+                    options: {
+                        ...chartDefaults,
+                        scales: {
+                            ...chartDefaults.scales,
+                            y: {
+                                ...chartDefaults.scales.y,
+                                ticks: {
+                                    ...chartDefaults.scales.y.ticks,
+                                    callback: v => (v >= 0 ? '+$' : '-$') + Math.abs(v).toLocaleString()
+                                }
+                            }
+                        }
+                    }
+                });
+
+                updateTimestamp();
+            } catch (e) {
+                console.error('Charts refresh failed:', e);
+            }
+        }
+
+        // --- Period selector ---
+        document.querySelectorAll('.period-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                refreshCharts(btn.dataset.period);
+            });
+        });
+
+        // --- Initial load ---
+        refreshAccount();
+        refreshScheduler();
+        refreshPositions();
+        refreshSignals();
+        refreshOrders();
+        refreshCharts('1M');
+
+        // --- Auto-refresh intervals ---
+        setInterval(refreshAccount, 30000);
+        setInterval(refreshScheduler, 30000);
+        setInterval(refreshPositions, 30000);
+        setInterval(refreshSignals, 60000);
+        setInterval(refreshOrders, 60000);
+    </script>
+</body>
+</html>

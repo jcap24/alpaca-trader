@@ -1,0 +1,21 @@
+watchlist:
+  - symbol: AAPL
+    name: Apple Inc.
+  - symbol: MSFT
+    name: Microsoft Corp.
+  - symbol: GOOGL
+    name: Alphabet Inc.
+  - symbol: AMZN
+    name: Amazon.com Inc.
+  - symbol: TSLA
+    name: Tesla Inc.
+  - symbol: NVDA
+    name: NVIDIA Corp.
+  - symbol: META
+    name: Meta Platforms Inc.
+  - symbol: JPM
+    name: JPMorgan Chase
+  - symbol: V
+    name: Visa Inc.
+  - symbol: UNH
+    name: UnitedHealth Group
