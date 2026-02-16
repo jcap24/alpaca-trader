@@ -104,6 +104,10 @@ def create_app(config=None) -> Flask:
     migrate = Migrate(app, db)
     csrf = CSRFProtect(app)
 
+    # Initialize encryption manager
+    global _encryption_manager
+    _encryption_manager = EncryptionManager()
+
     # Initialize rate limiter
     limiter = Limiter(
         app=app,
