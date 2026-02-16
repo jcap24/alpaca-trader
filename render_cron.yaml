@@ -1,0 +1,24 @@
+# Render Blueprint for Headless Trader as FREE Cron Job
+# Runs periodically, uses ZERO resources between runs!
+
+services:
+  - type: cron
+    name: alpaca-trader-cron
+    env: python
+    region: oregon
+    schedule: "*/5 * * * *"  # Every 5 minutes (customize as needed)
+    buildCommand: pip install -r requirements.txt
+    startCommand: python headless_trader_once.py
+    envVars:
+      - key: ALPACA_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: ALPACA_SECRET_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: ALPACA_PAPER
+        value: "true"  # Start with paper trading
+      - key: TRADING_ENABLED
+        value: "false"  # Start disabled for safety
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHON_VERSION
+        value: 3.11.0
