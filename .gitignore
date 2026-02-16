@@ -9,3 +9,15 @@ logs/
 dist/
 build/
 .pytest_cache/
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Gunicorn
+gunicorn.pid
+
+# Migrations
+migrations/versions/*.pyc

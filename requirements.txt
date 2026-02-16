@@ -1,3 +1,4 @@
+# Core dependencies
 alpaca-py>=0.21.0
 pandas>=2.0.0
 numpy>=1.24.0
@@ -6,5 +7,25 @@ pyyaml>=6.0
 python-dotenv>=1.0.0
 apscheduler>=3.10.0
 pytz>=2023.3
-pytest>=7.0.0
+
+# Web framework
 flask>=3.0.0
+
+# Phase 1: Authentication & Security
+flask-login>=0.6.3
+cryptography>=41.0.0
+gunicorn>=21.2.0
+
+# Phase 2: Enhanced Security
+flask-wtf>=1.2.1
+flask-limiter>=3.5.0
+
+# Phase 3: Database & 2FA
+flask-sqlalchemy>=3.1.1
+flask-migrate>=4.0.5
+pyotp>=2.9.0
+qrcode>=7.4.2
+pillow>=10.0.0
+
+# Testing
+pytest>=7.0.0
