@@ -62,12 +62,18 @@ def build_parser() -> argparse.ArgumentParser:
     backtest_parser.add_argument("--days", type=int, default=30, help="Days to backtest")
     backtest_parser.add_argument("--symbol", type=str, help="Backtest a single symbol")
 
-    # dashboard: web UI
-    dashboard_parser = subparsers.add_parser("dashboard", help="Start the web dashboard")
+    # dashboard: web UI (legacy single-user)
+    dashboard_parser = subparsers.add_parser("dashboard", help="Start the web dashboard (legacy, single-user)")
     dashboard_parser.add_argument("--host", type=str, default="127.0.0.1", help="Dashboard host")
     dashboard_parser.add_argument("--port", type=int, default=5000, help="Dashboard port")
     dashboard_parser.add_argument("--dry-run", action="store_true", help="Scheduler runs without real orders")
     dashboard_parser.add_argument("--no-scheduler", action="store_true", help="Start dashboard without trading scheduler")
+
+    # dashboard-secure: secure multi-user web UI
+    dashboard_secure_parser = subparsers.add_parser("dashboard-secure", help="Start secure multi-user dashboard (production)")
+    dashboard_secure_parser.add_argument("--host", type=str, default="127.0.0.1", help="Dashboard host")
+    dashboard_secure_parser.add_argument("--port", type=int, default=5000, help="Dashboard port")
+    dashboard_secure_parser.add_argument("--no-scheduler", action="store_true", help="Start dashboard without trading scheduler")
 
     return parser
 
@@ -229,6 +235,15 @@ def main():
             watchlist_path=args.watchlist,
             log_level=args.log_level,
             dry_run=getattr(args, "dry_run", False),
+            host=args.host,
+            port=args.port,
+            no_scheduler=getattr(args, "no_scheduler", False),
+        )
+
+    elif args.command == "dashboard-secure":
+        from alpaca_trader.dashboard_secure import start_dashboard_secure
+
+        start_dashboard_secure(
             host=args.host,
             port=args.port,
             no_scheduler=getattr(args, "no_scheduler", False),
