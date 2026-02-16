@@ -1,0 +1,25 @@
+# Render Blueprint for Headless Trader (Background Worker)
+# This deploys the lightweight headless trader without web UI
+
+services:
+  - type: worker
+    name: alpaca-trader-worker
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python headless_trader.py
+    envVars:
+      - key: ALPACA_API_KEY
+        sync: false  # You'll set this manually in Render dashboard
+      - key: ALPACA_SECRET_KEY
+        sync: false  # You'll set this manually in Render dashboard
+      - key: ALPACA_PAPER
+        value: "true"  # Start with paper trading
+      - key: TRADING_ENABLED
+        value: "false"  # Start disabled to test first
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHON_VERSION
+        value: 3.11.0
