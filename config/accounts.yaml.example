@@ -1,0 +1,11 @@
+accounts:
+  - name: "Paper Trading Account"
+    api_key: "YOUR_API_KEY_HERE"
+    secret_key: "YOUR_SECRET_KEY_HERE"
+    paper: true
+    active: true
+  - name: "Another Account"
+    api_key: "ANOTHER_API_KEY"
+    secret_key: "ANOTHER_SECRET_KEY"
+    paper: true
+    active: false

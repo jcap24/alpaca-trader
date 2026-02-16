@@ -40,3 +40,11 @@ class AlpacaClient:
     def get_portfolio_history(self, filter=None):
         """Return portfolio equity history."""
         return self.trading.get_portfolio_history(history_filter=filter)
+
+    def get_asset(self, symbol: str):
+        """Get asset information for a symbol. Returns None if not found."""
+        try:
+            return self.trading.get_asset(symbol)
+        except Exception as e:
+            logger.debug("Asset lookup failed for %s: %s", symbol, e)
+            return None

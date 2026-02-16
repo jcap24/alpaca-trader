@@ -1,6 +1,6 @@
 indicators:
   rsi:
-    enabled: true
+    enabled: false
     period: 14
     overbought: 70
     oversold: 30
@@ -11,13 +11,13 @@ indicators:
     long_period: 50
 
   macd:
-    enabled: true
+    enabled: false
     fast_period: 12
     slow_period: 26
     signal_period: 9
 
   bollinger_bands:
-    enabled: true
+    enabled: false
     period: 20
     std_dev: 2.0
 

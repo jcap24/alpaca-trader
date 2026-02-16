@@ -250,6 +250,221 @@
             font-style: italic;
         }
 
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            float: right;
+        }
+
+        .btn-primary:hover { background: #1d4ed8; }
+
+        .btn-success {
+            background: #059669;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-success:hover { background: #047857; }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-secondary:hover { background: #4b5563; }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .btn-danger:hover { background: #b91c1c; }
+
+        .form-container {
+            padding: 16px 20px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .form-row input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            flex: 1;
+        }
+
+        .form-row input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .error-message {
+            color: #f87171;
+            font-size: 12px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .info-message {
+            color: #60a5fa;
+            font-size: 12px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .info-message.show {
+            display: block;
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .toggle-container:hover {
+            background: #253348;
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #e2e8f0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #334155;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #2563eb;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .badge-active {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+
+        .badge-inactive {
+            background: #3f3f46;
+            color: #a1a1aa;
+        }
+
+        .badge-paper {
+            background: #1e3a5f;
+            color: #93c5fd;
+        }
+
+        .badge-live {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+
+        .btn-activate {
+            background: #059669;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+
+        .btn-activate:hover {
+            background: #047857;
+        }
+
+        .btn-edit {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+
+        .btn-edit:hover {
+            background: #1d4ed8;
+        }
+
         @media (max-width: 900px) {
             .charts-row { grid-template-columns: 1fr; }
             .cards { grid-template-columns: repeat(2, 1fr); }
@@ -328,6 +543,116 @@
                 </thead>
                 <tbody id="signals-body">
                     <tr><td colspan="6" class="empty-state loading">Loading signals...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Watchlist Management -->
+        <div class="section">
+            <div class="section-header">
+                Watchlist Management
+                <button id="add-symbol-btn" class="btn-primary">+ Add Symbol</button>
+            </div>
+
+            <!-- Add Symbol Form (hidden by default) -->
+            <div id="add-symbol-form" class="form-container" style="display: none;">
+                <div class="form-row">
+                    <input type="text" id="new-symbol" placeholder="Enter ticker symbol (e.g., AAPL)" maxlength="5" />
+                    <button id="submit-symbol" class="btn-success">
+                        <span id="add-btn-text">Add</span>
+                        <span id="add-btn-loading" style="display: none;">Validating...</span>
+                    </button>
+                    <button id="cancel-add" class="btn-secondary">Cancel</button>
+                </div>
+                <div id="add-error" class="error-message"></div>
+                <div id="add-info" class="info-message"></div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="watchlist-body">
+                    <tr><td colspan="3" class="empty-state loading">Loading watchlist...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Indicator Settings -->
+        <div class="section">
+            <div class="section-header">Technical Indicators</div>
+            <div id="indicators-container">
+                <div class="toggle-container">
+                    <span class="toggle-label">RSI (Relative Strength Index)</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-rsi" onchange="toggleIndicator('rsi', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-container">
+                    <span class="toggle-label">SMA Crossover (Moving Average)</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-sma" onchange="toggleIndicator('sma', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-container">
+                    <span class="toggle-label">MACD (Convergence Divergence)</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-macd" onchange="toggleIndicator('macd', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-container">
+                    <span class="toggle-label">Bollinger Bands</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-bollinger" onchange="toggleIndicator('bollinger', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Management -->
+        <div class="section">
+            <div class="section-header">
+                Trading Accounts
+                <button id="add-account-btn" class="btn-primary">+ Add Account</button>
+            </div>
+
+            <!-- Add/Edit Account Form (hidden by default) -->
+            <div id="account-form" class="form-container" style="display: none;">
+                <div class="form-row">
+                    <input type="text" id="account-name" placeholder="Account Name" />
+                    <input type="text" id="account-api-key" placeholder="API Key" />
+                    <input type="password" id="account-secret-key" placeholder="Secret Key" />
+                    <label style="display: flex; align-items: center; gap: 6px; color: #e2e8f0;">
+                        <input type="checkbox" id="account-is-paper" checked />
+                        <span style="font-size: 13px;">Paper Trading</span>
+                    </label>
+                    <button id="submit-account" class="btn-success">Add</button>
+                    <button id="cancel-account" class="btn-secondary">Cancel</button>
+                </div>
+                <div id="account-error" class="error-message"></div>
+                <div id="account-info" class="info-message"></div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>API Key</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="accounts-body">
+                    <tr><td colspan="5" class="empty-state loading">Loading accounts...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -543,6 +868,367 @@
             }
         }
 
+        // --- Watchlist Management ---
+        async function refreshWatchlist() {
+            try {
+                const data = await fetchJSON('/api/watchlist');
+                const tbody = document.getElementById('watchlist-body');
+                if (!data.length) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No securities in watchlist</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.forEach(entry => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${entry.symbol}</strong></td>
+                        <td>${entry.name}</td>
+                        <td>
+                            <button class="btn-danger" onclick="removeSymbol('${entry.symbol}')">Remove</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                updateTimestamp();
+            } catch (e) {
+                console.error('Watchlist refresh failed:', e);
+            }
+        }
+
+        async function addSymbol() {
+            const symbolInput = document.getElementById('new-symbol');
+            const errorDiv = document.getElementById('add-error');
+            const infoDiv = document.getElementById('add-info');
+            const btnText = document.getElementById('add-btn-text');
+            const btnLoading = document.getElementById('add-btn-loading');
+            const submitBtn = document.getElementById('submit-symbol');
+
+            const symbol = symbolInput.value.trim().toUpperCase();
+
+            // Clear previous messages
+            errorDiv.classList.remove('show');
+            infoDiv.classList.remove('show');
+
+            if (!symbol) {
+                errorDiv.textContent = 'Please enter a symbol';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            // Show loading state
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline';
+            submitBtn.disabled = true;
+
+            try {
+                const resp = await fetch('/api/watchlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol })
+                });
+
+                const data = await resp.json();
+
+                // Reset button state
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+                submitBtn.disabled = false;
+
+                if (!resp.ok) {
+                    errorDiv.textContent = data.error || 'Failed to add symbol';
+                    errorDiv.classList.add('show');
+                    return;
+                }
+
+                // Success - show the auto-filled name
+                infoDiv.textContent = `Added ${data.symbol}: ${data.name}`;
+                infoDiv.classList.add('show');
+
+                // Reset form after a short delay
+                setTimeout(() => {
+                    symbolInput.value = '';
+                    errorDiv.classList.remove('show');
+                    infoDiv.classList.remove('show');
+                    document.getElementById('add-symbol-form').style.display = 'none';
+                }, 1500);
+
+                await refreshWatchlist();
+                await refreshSignals(); // Refresh signals to show new symbol
+
+            } catch (e) {
+                // Reset button state
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+                submitBtn.disabled = false;
+
+                errorDiv.textContent = 'Network error: ' + e.message;
+                errorDiv.classList.add('show');
+            }
+        }
+
+        async function removeSymbol(symbol) {
+            if (!confirm(`Remove ${symbol} from watchlist?`)) {
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/api/watchlist/${symbol}`, {
+                    method: 'DELETE'
+                });
+
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    alert('Failed to remove: ' + (data.error || 'Unknown error'));
+                    return;
+                }
+
+                await refreshWatchlist();
+                await refreshSignals(); // Refresh signals after removal
+
+            } catch (e) {
+                alert('Network error: ' + e.message);
+            }
+        }
+
+        // --- Indicator Management ---
+        async function refreshIndicators() {
+            try {
+                const data = await fetchJSON('/api/indicators');
+
+                // Update toggle states
+                document.getElementById('toggle-rsi').checked = data.rsi.enabled;
+                document.getElementById('toggle-sma').checked = data.sma.enabled;
+                document.getElementById('toggle-macd').checked = data.macd.enabled;
+                document.getElementById('toggle-bollinger').checked = data.bollinger.enabled;
+
+            } catch (e) {
+                console.error('Indicators refresh failed:', e);
+            }
+        }
+
+        async function toggleIndicator(indicator, enabled) {
+            try {
+                const updateData = {};
+                updateData[indicator] = enabled;
+
+                const resp = await fetch('/api/indicators', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    alert('Failed to update indicator: ' + (data.error || 'Unknown error'));
+                    // Revert the toggle
+                    await refreshIndicators();
+                    return;
+                }
+
+                console.log(`${indicator} ${enabled ? 'enabled' : 'disabled'}`);
+
+                // Refresh signals to reflect new indicator settings
+                await refreshSignals();
+
+            } catch (e) {
+                alert('Network error: ' + e.message);
+                // Revert the toggle
+                await refreshIndicators();
+            }
+        }
+
+        // --- Account Management ---
+        let editingAccountName = null;
+
+        async function refreshAccounts() {
+            try {
+                const data = await fetchJSON('/api/accounts');
+                const tbody = document.getElementById('accounts-body');
+                if (!data.length) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No accounts configured. Click "+ Add Account" to get started.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.forEach(account => {
+                    const row = document.createElement('tr');
+                    const statusBadge = account.active ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-inactive">Inactive</span>';
+                    const typeBadge = account.paper ? '<span class="badge badge-paper">Paper</span>' : '<span class="badge badge-live">Live</span>';
+                    const activateBtn = account.active ? '' : `<button class="btn-activate" onclick="activateAccount('${account.name}')">Activate</button>`;
+
+                    row.innerHTML = `
+                        <td><strong>${account.name}</strong></td>
+                        <td>${account.api_key}</td>
+                        <td>${typeBadge}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            ${activateBtn}
+                            <button class="btn-edit" onclick="editAccount('${account.name}')">Edit</button>
+                            <button class="btn-danger" onclick="deleteAccount('${account.name}')">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                updateTimestamp();
+            } catch (e) {
+                console.error('Accounts refresh failed:', e);
+            }
+        }
+
+        function showAccountForm(mode, accountName = null) {
+            editingAccountName = accountName;
+            const form = document.getElementById('account-form');
+            const submitBtn = document.getElementById('submit-account');
+            const nameInput = document.getElementById('account-name');
+
+            // Clear form
+            document.getElementById('account-name').value = '';
+            document.getElementById('account-api-key').value = '';
+            document.getElementById('account-secret-key').value = '';
+            document.getElementById('account-is-paper').checked = true;
+            document.getElementById('account-error').classList.remove('show');
+            document.getElementById('account-info').classList.remove('show');
+
+            if (mode === 'edit') {
+                submitBtn.textContent = 'Update';
+                nameInput.value = accountName;
+                nameInput.disabled = true;
+            } else {
+                submitBtn.textContent = 'Add';
+                nameInput.disabled = false;
+            }
+
+            form.style.display = 'block';
+        }
+
+        function hideAccountForm() {
+            document.getElementById('account-form').style.display = 'none';
+            editingAccountName = null;
+        }
+
+        async function submitAccountForm() {
+            const nameInput = document.getElementById('account-name');
+            const apiKeyInput = document.getElementById('account-api-key');
+            const secretKeyInput = document.getElementById('account-secret-key');
+            const isPaperInput = document.getElementById('account-is-paper');
+            const errorDiv = document.getElementById('account-error');
+            const infoDiv = document.getElementById('account-info');
+
+            const name = nameInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+            const secretKey = secretKeyInput.value.trim();
+            const isPaper = isPaperInput.checked;
+
+            // Clear previous messages
+            errorDiv.classList.remove('show');
+            infoDiv.classList.remove('show');
+
+            // Validation
+            if (!name) {
+                errorDiv.textContent = 'Please enter an account name';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            if (!apiKey || !secretKey) {
+                errorDiv.textContent = 'Please enter both API key and secret key';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                let resp;
+                if (editingAccountName) {
+                    // Update existing account
+                    resp = await fetch(`/api/accounts/${encodeURIComponent(editingAccountName)}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ api_key: apiKey, secret_key: secretKey, paper: isPaper })
+                    });
+                } else {
+                    // Add new account
+                    resp = await fetch('/api/accounts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, api_key: apiKey, secret_key: secretKey, paper: isPaper })
+                    });
+                }
+
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    errorDiv.textContent = data.error || 'Failed to save account';
+                    errorDiv.classList.add('show');
+                    return;
+                }
+
+                // Success
+                infoDiv.textContent = editingAccountName ? `Account "${name}" updated successfully` : `Account "${name}" added successfully`;
+                infoDiv.classList.add('show');
+
+                // Reset form after a short delay
+                setTimeout(() => {
+                    hideAccountForm();
+                    refreshAccounts();
+                }, 1500);
+
+            } catch (e) {
+                errorDiv.textContent = 'Network error: ' + e.message;
+                errorDiv.classList.add('show');
+            }
+        }
+
+        async function editAccount(accountName) {
+            showAccountForm('edit', accountName);
+        }
+
+        async function deleteAccount(accountName) {
+            if (!confirm(`Delete account "${accountName}"?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/api/accounts/${encodeURIComponent(accountName)}`, {
+                    method: 'DELETE'
+                });
+
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    alert('Failed to delete: ' + (data.error || 'Unknown error'));
+                    return;
+                }
+
+                await refreshAccounts();
+
+            } catch (e) {
+                alert('Network error: ' + e.message);
+            }
+        }
+
+        async function activateAccount(accountName) {
+            if (!confirm(`Switch to account "${accountName}"?\n\nYou will need to restart the dashboard for this change to take effect.`)) {
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/api/accounts/${encodeURIComponent(accountName)}/activate`, {
+                    method: 'POST'
+                });
+
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    alert('Failed to activate: ' + (data.error || 'Unknown error'));
+                    return;
+                }
+
+                alert(data.message || 'Account activated. Please restart the dashboard.');
+                await refreshAccounts();
+
+            } catch (e) {
+                alert('Network error: ' + e.message);
+            }
+        }
+
         // --- Charts ---
         let equityChart = null;
         let plChart = null;
@@ -649,12 +1335,57 @@
             });
         });
 
+        // --- Watchlist form event listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('add-symbol-btn').addEventListener('click', () => {
+                const form = document.getElementById('add-symbol-form');
+                form.style.display = form.style.display === 'none' ? 'block' : 'none';
+                document.getElementById('add-error').classList.remove('show');
+                document.getElementById('add-info').classList.remove('show');
+            });
+
+            document.getElementById('submit-symbol').addEventListener('click', addSymbol);
+
+            document.getElementById('cancel-add').addEventListener('click', () => {
+                document.getElementById('add-symbol-form').style.display = 'none';
+                document.getElementById('new-symbol').value = '';
+                document.getElementById('add-error').classList.remove('show');
+                document.getElementById('add-info').classList.remove('show');
+            });
+
+            // Allow Enter key to submit
+            document.getElementById('new-symbol').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addSymbol();
+            });
+
+            // Account form event listeners
+            document.getElementById('add-account-btn').addEventListener('click', () => {
+                showAccountForm('add');
+            });
+
+            document.getElementById('submit-account').addEventListener('click', submitAccountForm);
+
+            document.getElementById('cancel-account').addEventListener('click', () => {
+                hideAccountForm();
+            });
+
+            // Allow Enter key to submit account form
+            ['account-name', 'account-api-key', 'account-secret-key'].forEach(id => {
+                document.getElementById(id).addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') submitAccountForm();
+                });
+            });
+        });
+
         // --- Initial load ---
         refreshAccount();
         refreshScheduler();
         refreshPositions();
         refreshSignals();
         refreshOrders();
+        refreshWatchlist();
+        refreshIndicators();
+        refreshAccounts();
         refreshCharts('1M');
 
         // --- Auto-refresh intervals ---
@@ -663,6 +1394,8 @@
         setInterval(refreshPositions, 30000);
         setInterval(refreshSignals, 60000);
         setInterval(refreshOrders, 60000);
+        setInterval(refreshWatchlist, 60000);
+        setInterval(refreshAccounts, 60000);
     </script>
 </body>
 </html>

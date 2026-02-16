@@ -152,7 +152,22 @@ def load_watchlist(watchlist_path: Path) -> list[str]:
 
 
 def load_api_keys() -> tuple[str, str]:
-    """Load Alpaca API keys from .env file."""
+    """
+    Load Alpaca API keys from .env file (legacy) or accounts.yaml (new).
+    Tries accounts.yaml first, falls back to .env if not found.
+    """
+    # Try loading from accounts.yaml first
+    accounts_path = Path("config/accounts.yaml")
+    if accounts_path.exists():
+        try:
+            accounts = load_accounts(accounts_path)
+            active_account = get_active_account(accounts)
+            if active_account:
+                return active_account["api_key"], active_account["secret_key"]
+        except Exception:
+            pass  # Fall back to .env
+
+    # Fall back to .env (legacy support)
     load_dotenv()
 
     api_key = os.getenv("ALPACA_API_KEY")
@@ -160,8 +175,116 @@ def load_api_keys() -> tuple[str, str]:
 
     if not api_key or not secret_key:
         raise ValueError(
-            "ALPACA_API_KEY and ALPACA_SECRET_KEY must be set in .env file. "
-            "Copy .env.example to .env and fill in your keys."
+            "No API keys found. Please configure accounts in the dashboard or "
+            "set ALPACA_API_KEY and ALPACA_SECRET_KEY in .env file."
         )
 
     return api_key, secret_key
+
+
+def load_accounts(accounts_path: Path) -> list[dict]:
+    """Load trading accounts from accounts.yaml."""
+    if not accounts_path.exists():
+        return []
+
+    with open(accounts_path, "r") as f:
+        raw = yaml.safe_load(f)
+
+    return raw.get("accounts", []) if raw else []
+
+
+def save_accounts(accounts_path: Path, accounts: list[dict]) -> None:
+    """Save trading accounts to accounts.yaml."""
+    accounts_data = {"accounts": accounts}
+    with open(accounts_path, "w") as f:
+        yaml.dump(accounts_data, f, default_flow_style=False)
+
+
+def get_active_account(accounts: list[dict]) -> Optional[dict]:
+    """Get the currently active account."""
+    # Return the first active account, or the first account if none are marked active
+    for account in accounts:
+        if account.get("active", False):
+            return account
+
+    # No active account marked, use the first one
+    return accounts[0] if accounts else None
+
+
+def set_active_account(accounts_path: Path, account_name: str) -> bool:
+    """Set an account as active by name."""
+    accounts = load_accounts(accounts_path)
+
+    found = False
+    for account in accounts:
+        if account["name"] == account_name:
+            account["active"] = True
+            found = True
+        else:
+            account["active"] = False
+
+    if found:
+        save_accounts(accounts_path, accounts)
+
+    return found
+
+
+def add_account(accounts_path: Path, name: str, api_key: str, secret_key: str, is_paper: bool = True) -> None:
+    """Add a new trading account."""
+    accounts = load_accounts(accounts_path)
+
+    # Check for duplicate names
+    if any(acc["name"] == name for acc in accounts):
+        raise ValueError(f"Account '{name}' already exists")
+
+    # If this is the first account, make it active
+    is_active = len(accounts) == 0
+
+    new_account = {
+        "name": name,
+        "api_key": api_key,
+        "secret_key": secret_key,
+        "paper": is_paper,
+        "active": is_active
+    }
+
+    accounts.append(new_account)
+    save_accounts(accounts_path, accounts)
+
+
+def update_account(accounts_path: Path, name: str, api_key: str, secret_key: str, is_paper: bool) -> bool:
+    """Update an existing account."""
+    accounts = load_accounts(accounts_path)
+
+    found = False
+    for account in accounts:
+        if account["name"] == name:
+            account["api_key"] = api_key
+            account["secret_key"] = secret_key
+            account["paper"] = is_paper
+            found = True
+            break
+
+    if found:
+        save_accounts(accounts_path, accounts)
+
+    return found
+
+
+def delete_account(accounts_path: Path, name: str) -> bool:
+    """Delete an account by name."""
+    accounts = load_accounts(accounts_path)
+    original_count = len(accounts)
+
+    accounts = [acc for acc in accounts if acc["name"] != name]
+
+    if len(accounts) < original_count:
+        # If we deleted the active account and there are remaining accounts,
+        # make the first one active
+        if accounts and not any(acc.get("active", False) for acc in accounts):
+            accounts[0]["active"] = True
+
+        save_accounts(accounts_path, accounts)
+        return True
+
+    return False
