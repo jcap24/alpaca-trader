@@ -70,11 +70,23 @@ def create_app(config=None) -> Flask:
         static_folder=str(Path(__file__).parent.parent / "static"),
     )
 
+    # Fix DATABASE_URL for Render's PostgreSQL (requires SSL)
+    database_url = os.getenv("DATABASE_URL", "sqlite:///alpaca_trader.db")
+    if database_url.startswith("postgres://"):
+        # Render uses postgres:// but SQLAlchemy 1.4+ requires postgresql://
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+    # Add SSL mode for PostgreSQL connections
+    if database_url.startswith("postgresql://") and "sslmode" not in database_url:
+        separator = "&" if "?" in database_url else "?"
+        database_url = f"{database_url}{separator}sslmode=require"
+
     # Configuration
     app.config.update(
         SECRET_KEY=os.getenv("SECRET_KEY", os.urandom(32)),
-        SQLALCHEMY_DATABASE_URI=os.getenv("DATABASE_URL", "sqlite:///alpaca_trader.db"),
+        SQLALCHEMY_DATABASE_URI=database_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True, "pool_recycle": 300},
         WTF_CSRF_ENABLED=True,
         WTF_CSRF_TIME_LIMIT=None,  # CSRF tokens don't expire
         SESSION_COOKIE_SECURE=os.getenv("FLASK_ENV") == "production",
