@@ -40,6 +40,7 @@ from alpaca.trading.enums import QueryOrderStatus
 from alpaca.trading.requests import GetOrdersRequest
 
 from alpaca_trader.auth import admin_required, log_audit, login_manager, update_last_login
+from alpaca_trader.auto_trader import AutoTrader
 from alpaca_trader.client import AlpacaClient
 from alpaca_trader.config import Settings
 from alpaca_trader.data import fetch_bars
@@ -60,6 +61,7 @@ _encryption_manager: EncryptionManager = None
 _client: AlpacaClient = None
 _pm: PortfolioManager = None
 _scheduler: TradingScheduler = None
+_auto_trader = None  # AutoTrader instance for background scheduling
 
 
 def create_app(config=None) -> Flask:
@@ -149,6 +151,12 @@ def create_app(config=None) -> Flask:
         except Exception as e:
             logger.error("Database initialization failed: %s", e)
             # Don't crash the app, continue anyway
+
+    # Initialize AutoTrader for background scheduling
+    global _auto_trader
+    _auto_trader = AutoTrader(app, _encryption_manager)
+    _auto_trader.start()
+    logger.info("AutoTrader initialized and started")
 
     # Security headers middleware
     @app.after_request
@@ -648,7 +656,8 @@ def create_app(config=None) -> Flask:
                 "rsi": {"enabled": settings.rsi_enabled, "name": "RSI"},
                 "sma": {"enabled": settings.sma_enabled, "name": "SMA Crossover"},
                 "macd": {"enabled": settings.macd_enabled, "name": "MACD"},
-                "bollinger": {"enabled": settings.bollinger_enabled, "name": "Bollinger Bands"}
+                "bollinger": {"enabled": settings.bollinger_enabled, "name": "Bollinger Bands"},
+                "schedule": {"enabled": settings.schedule_enabled, "name": "Automated Trading"}
             })
 
         except Exception as e:
@@ -676,6 +685,11 @@ def create_app(config=None) -> Flask:
                 settings.macd_enabled = bool(data["macd"])
             if "bollinger" in data:
                 settings.bollinger_enabled = bool(data["bollinger"])
+            if "schedule_enabled" in data:
+                settings.schedule_enabled = bool(data["schedule_enabled"])
+                logger.info("User %s %s automated trading",
+                           current_user.username,
+                           "enabled" if settings.schedule_enabled else "disabled")
 
             db.session.commit()
 
@@ -881,7 +895,7 @@ def create_app(config=None) -> Flask:
     @login_required
     def api_scheduler_status():
         """Get scheduler status."""
-        running = _scheduler is not None and _scheduler.scheduler.running if _scheduler else False
+        running = _auto_trader is not None and _auto_trader.scheduler.running if _auto_trader else False
         return jsonify({"running": running})
 
     # =============================================================================

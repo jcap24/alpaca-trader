@@ -617,6 +617,33 @@
             </div>
         </div>
 
+        <!-- Automated Trading Settings -->
+        <div class="section">
+            <div class="section-header">Automated Trading</div>
+            <div class="auto-trade-info" style="padding: 16px 20px; background: #1e293b; border-radius: 8px; margin-bottom: 16px;">
+                <div class="toggle-container" style="margin-bottom: 12px;">
+                    <span class="toggle-label" style="font-weight: 600; color: #f1f5f9;">Enable Automated Trading</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-schedule" onchange="toggleScheduler(this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;"><strong style="color: #e2e8f0;">How it works:</strong></p>
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li>Scheduler checks every <strong>5 minutes</strong> for trading signals</li>
+                        <li>Automatically executes BUY/SELL orders based on your indicators</li>
+                        <li>Uses your active trading account and watchlist</li>
+                        <li>All trades are logged in the audit trail</li>
+                        <li>Runs 24/7 in the background (no need to keep dashboard open)</li>
+                    </ul>
+                    <p style="margin: 12px 0 0 0; padding: 8px; background: #fef3c7; color: #92400e; border-radius: 4px;">
+                        <strong>⚠️ Warning:</strong> Automated trading will execute real trades! Make sure you've tested your strategy and understand the risks before enabling.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <!-- Account Management -->
         <div class="section">
             <div class="section-header">
@@ -1000,9 +1027,52 @@
                 document.getElementById('toggle-sma').checked = data.sma.enabled;
                 document.getElementById('toggle-macd').checked = data.macd.enabled;
                 document.getElementById('toggle-bollinger').checked = data.bollinger.enabled;
+                document.getElementById('toggle-schedule').checked = data.schedule.enabled;
 
             } catch (e) {
                 console.error('Indicators refresh failed:', e);
+            }
+        }
+
+        async function toggleScheduler(enabled) {
+            try {
+                const confirmed = enabled
+                    ? confirm('Enable automated trading? This will execute real trades automatically based on your signals. Are you sure?')
+                    : confirm('Disable automated trading? Scheduled trades will stop.');
+
+                if (!confirmed) {
+                    // Revert the toggle
+                    document.getElementById('toggle-schedule').checked = !enabled;
+                    return;
+                }
+
+                const resp = await fetch('/api/indicators', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schedule_enabled: enabled })
+                });
+
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    alert('Failed to update scheduler: ' + (data.error || 'Unknown error'));
+                    // Revert the toggle
+                    await refreshIndicators();
+                    return;
+                }
+
+                console.log(`Automated trading ${enabled ? 'enabled' : 'disabled'}`);
+                alert(enabled
+                    ? 'Automated trading enabled! The scheduler will check for signals every 5 minutes.'
+                    : 'Automated trading disabled.');
+
+                // Refresh scheduler status
+                await refreshScheduler();
+
+            } catch (e) {
+                console.error('Failed to toggle scheduler:', e);
+                alert('Error: ' + e.message);
+                // Revert the toggle
+                await refreshIndicators();
             }
         }
 
