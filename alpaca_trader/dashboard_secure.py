@@ -100,6 +100,40 @@ def create_app(config=None) -> Flask:
         storage_uri="memory://",
     )
 
+    # Auto-initialize database on first run
+    with app.app_context():
+        try:
+            # Create all tables if they don't exist
+            db.create_all()
+            logger.info("Database tables created/verified")
+
+            # Create default admin user if no users exist
+            if User.query.count() == 0:
+                admin_username = os.getenv("ADMIN_USERNAME", "admin")
+                admin_email = os.getenv("ADMIN_EMAIL", "admin@example.com")
+                admin_password = os.getenv("ADMIN_PASSWORD")
+
+                if admin_password:
+                    pm = PasswordManager()
+                    password_hash = pm.hash_password(admin_password)
+
+                    admin_user = User(
+                        username=admin_username,
+                        email=admin_email,
+                        password_hash=password_hash,
+                        role="admin",
+                        is_2fa_enabled=False,
+                    )
+
+                    db.session.add(admin_user)
+                    db.session.commit()
+                    logger.info("Default admin user created: %s", admin_username)
+                else:
+                    logger.warning("ADMIN_PASSWORD not set, skipping admin user creation")
+        except Exception as e:
+            logger.error("Database initialization failed: %s", e)
+            # Don't crash the app, continue anyway
+
     # Security headers middleware
     @app.after_request
     def set_security_headers(response):
