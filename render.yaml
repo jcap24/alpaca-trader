@@ -23,6 +23,12 @@ services:
         fromDatabase:
           name: alpaca-trader-db
           property: connectionString
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_EMAIL
+        value: admin@example.com
+      - key: ADMIN_PASSWORD
+        sync: false
       - key: PYTHON_VERSION
         value: 3.11.0
 
