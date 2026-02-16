@@ -13,7 +13,7 @@ logger = logging.getLogger("alpaca_trader")
 
 # Initialize Flask-Login
 login_manager = LoginManager()
-login_manager.login_view = "login"
+login_manager.login_view = "login_page"
 login_manager.login_message = "Please log in to access this page."
 
 
