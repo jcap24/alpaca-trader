@@ -24,8 +24,8 @@ from dotenv import load_dotenv
 from alpaca_trader.client import AlpacaClient
 from alpaca_trader.config import Settings, load_settings
 from alpaca_trader.data import fetch_bars
+from alpaca_trader.executor import OrderExecutor
 from alpaca_trader.indicators import compute_all
-from alpaca_trader.portfolio import PortfolioManager
 from alpaca_trader.signals import Action, evaluate_signals
 
 # Load environment variables
@@ -65,7 +65,7 @@ class HeadlessTrader:
         logger.info(f"Trading enabled: {self.trading_enabled}")
 
         if not self.trading_enabled:
-            logger.warning("⚠️  TRADING IS DISABLED - Set TRADING_ENABLED=true to enable")
+            logger.warning("[WARNING] TRADING IS DISABLED - Set TRADING_ENABLED=true to enable")
 
         # Initialize Alpaca client
         api_key = os.getenv("ALPACA_API_KEY")
@@ -76,7 +76,7 @@ class HeadlessTrader:
             raise ValueError("ALPACA_API_KEY and ALPACA_SECRET_KEY must be set")
 
         self.client = AlpacaClient(api_key, secret_key, paper=is_paper)
-        self.pm = PortfolioManager(self.client, self.settings)
+        self.executor = OrderExecutor(self.client, self.settings)
 
         account_type = "PAPER" if is_paper else "LIVE"
         logger.info(f"Connected to Alpaca ({account_type} trading)")
@@ -171,22 +171,22 @@ class HeadlessTrader:
                     if signal.action == Action.BUY:
                         buy_signals += 1
                         if self.trading_enabled:
-                            order = self.pm.place_order(symbol, "buy")
-                            if order:
+                            result = self.executor.execute_signal(signal)
+                            if result:
                                 trades_executed += 1
-                                logger.info(f"✅ BUY order placed for {symbol}")
+                                logger.info(f"[ORDER] BUY order placed for {symbol} - Order ID: {result.get('order_id')}")
                         else:
-                            logger.info(f"🔵 BUY signal for {symbol} (trading disabled)")
+                            logger.info(f"[SIGNAL] BUY signal for {symbol} (trading disabled)")
 
                     elif signal.action == Action.SELL:
                         sell_signals += 1
                         if self.trading_enabled:
-                            order = self.pm.place_order(symbol, "sell")
-                            if order:
+                            result = self.executor.execute_signal(signal)
+                            if result:
                                 trades_executed += 1
-                                logger.info(f"✅ SELL order placed for {symbol}")
+                                logger.info(f"[ORDER] SELL order placed for {symbol} - Order ID: {result.get('order_id')}")
                         else:
-                            logger.info(f"🔵 SELL signal for {symbol} (trading disabled)")
+                            logger.info(f"[SIGNAL] SELL signal for {symbol} (trading disabled)")
 
                 except Exception as e:
                     logger.exception(f"Error processing {symbol}: {e}")
@@ -210,7 +210,7 @@ class HeadlessTrader:
     def start(self):
         """Start the trader."""
         logger.info("=" * 80)
-        logger.info("🚀 Headless Trader Started")
+        logger.info("Headless Trader Started")
         logger.info("=" * 80)
         logger.info("Press Ctrl+C to stop")
         logger.info("")

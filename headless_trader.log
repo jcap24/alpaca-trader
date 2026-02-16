@@ -1,0 +1,42 @@
+2026-02-16 18:07:12,975 - headless_trader - INFO - ================================================================================
+2026-02-16 18:07:12,975 - headless_trader - INFO - Initializing Headless Trader
+2026-02-16 18:07:12,975 - headless_trader - INFO - ================================================================================
+2026-02-16 18:07:12,985 - headless_trader - INFO - Loaded 9 symbols from watchlist
+2026-02-16 18:07:12,985 - headless_trader - INFO - Trading enabled: False
+2026-02-16 18:09:10,879 - headless_trader - INFO - ================================================================================
+2026-02-16 18:09:10,879 - headless_trader - INFO - Initializing Headless Trader
+2026-02-16 18:09:10,879 - headless_trader - INFO - ================================================================================
+2026-02-16 18:09:10,879 - headless_trader - INFO - Loaded 9 symbols from watchlist
+2026-02-16 18:09:10,879 - headless_trader - INFO - Trading enabled: False
+2026-02-16 18:09:10,879 - headless_trader - WARNING - [WARNING] TRADING IS DISABLED - Set TRADING_ENABLED=true to enable
+2026-02-16 18:09:48,111 - headless_trader - INFO - ================================================================================
+2026-02-16 18:09:48,111 - headless_trader - INFO - Initializing Headless Trader
+2026-02-16 18:09:48,111 - headless_trader - INFO - ================================================================================
+2026-02-16 18:09:48,127 - headless_trader - INFO - Loaded 9 symbols from watchlist
+2026-02-16 18:09:48,127 - headless_trader - INFO - Trading enabled: False
+2026-02-16 18:09:48,127 - headless_trader - WARNING - [WARNING] TRADING IS DISABLED - Set TRADING_ENABLED=true to enable
+2026-02-16 18:09:48,127 - alpaca_trader - INFO - Alpaca client initialized (paper=True)
+2026-02-16 18:11:28,074 - headless_trader - INFO - ================================================================================
+2026-02-16 18:11:28,074 - headless_trader - INFO - Initializing Headless Trader
+2026-02-16 18:11:28,074 - headless_trader - INFO - ================================================================================
+2026-02-16 18:11:28,075 - headless_trader - INFO - Loaded 9 symbols from watchlist
+2026-02-16 18:11:28,075 - headless_trader - INFO - Trading enabled: False
+2026-02-16 18:11:28,075 - headless_trader - WARNING - [WARNING] TRADING IS DISABLED - Set TRADING_ENABLED=true to enable
+2026-02-16 18:11:28,075 - alpaca_trader - INFO - Alpaca client initialized (paper=True)
+2026-02-16 18:11:28,075 - headless_trader - INFO - Connected to Alpaca (PAPER trading)
+2026-02-16 18:11:28,075 - headless_trader - INFO - Watchlist: 9 symbols
+2026-02-16 18:11:28,075 - headless_trader - INFO - Check interval: 60 minutes
+2026-02-16 18:11:28,113 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-02-16 18:11:28,113 - headless_trader - INFO - Scheduler configured to run every 60 minutes
+2026-02-16 18:11:28,113 - headless_trader - INFO - ================================================================================
+2026-02-16 18:11:28,113 - headless_trader - INFO - Headless Trader Started
+2026-02-16 18:11:28,113 - headless_trader - INFO - ================================================================================
+2026-02-16 18:11:28,113 - headless_trader - INFO - Press Ctrl+C to stop
+2026-02-16 18:11:28,113 - headless_trader - INFO - 
+2026-02-16 18:11:28,113 - apscheduler.scheduler - INFO - Added job "Check trading signals" to job store "default"
+2026-02-16 18:11:28,113 - apscheduler.scheduler - INFO - Scheduler started
+2026-02-16 18:11:28,116 - apscheduler.executors.default - INFO - Running job "Check trading signals (trigger: interval[1:00:00], next run at: 2026-02-16 19:11:28 EST)" (scheduled at 2026-02-16 18:11:28.106877-05:00)
+2026-02-16 18:11:28,116 - headless_trader - INFO - --------------------------------------------------------------------------------
+2026-02-16 18:11:28,116 - headless_trader - INFO - Checking signals at 2026-02-16 18:11:28
+2026-02-16 18:11:28,116 - headless_trader - INFO - Outside market hours, skipping check
+2026-02-16 18:11:28,116 - apscheduler.executors.default - INFO - Job "Check trading signals (trigger: interval[1:00:00], next run at: 2026-02-16 19:11:28 EST)" executed successfully
