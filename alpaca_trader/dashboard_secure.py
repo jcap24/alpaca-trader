@@ -957,6 +957,10 @@ def start_dashboard_secure(
     """Start the secure dashboard with optional background scheduler."""
     global _encryption_manager, _client, _pm, _scheduler
 
+    # Load environment variables from .env file
+    from dotenv import load_dotenv
+    load_dotenv()
+
     # Initialize encryption manager
     _encryption_manager = EncryptionManager()
 

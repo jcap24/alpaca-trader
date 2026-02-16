@@ -185,6 +185,18 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
 
+    # Dashboard-secure doesn't need API keys or settings (users configure through UI)
+    if args.command == "dashboard-secure":
+        from alpaca_trader.dashboard_secure import start_dashboard_secure
+
+        start_dashboard_secure(
+            host=args.host,
+            port=args.port,
+            no_scheduler=getattr(args, "no_scheduler", False),
+        )
+        return
+
+    # All other commands need API keys and settings
     setup_logger(level=args.log_level)
     settings = load_settings(Path(args.config))
     watchlist = load_watchlist(Path(args.watchlist))
@@ -235,15 +247,6 @@ def main():
             watchlist_path=args.watchlist,
             log_level=args.log_level,
             dry_run=getattr(args, "dry_run", False),
-            host=args.host,
-            port=args.port,
-            no_scheduler=getattr(args, "no_scheduler", False),
-        )
-
-    elif args.command == "dashboard-secure":
-        from alpaca_trader.dashboard_secure import start_dashboard_secure
-
-        start_dashboard_secure(
             host=args.host,
             port=args.port,
             no_scheduler=getattr(args, "no_scheduler", False),

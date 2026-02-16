@@ -19,7 +19,7 @@ def init_database():
         # Create all tables
         db.create_all()
 
-        print("✅ Database initialized successfully!")
+        print("[SUCCESS] Database initialized successfully!")
         print()
         print(f"Database location: {app.config['SQLALCHEMY_DATABASE_URI']}")
         print()

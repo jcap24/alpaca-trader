@@ -70,7 +70,7 @@ def create_admin_user():
         db.session.commit()
 
         print()
-        print("✅ Admin user created successfully!")
+        print("[SUCCESS] Admin user created successfully!")
         print()
         print(f"Username: {username}")
         print(f"Email: {email}")

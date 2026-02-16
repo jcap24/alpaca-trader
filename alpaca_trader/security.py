@@ -7,7 +7,7 @@ import pyotp
 import qrcode
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from io import BytesIO
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -39,8 +39,8 @@ class EncryptionManager:
 
     def _create_fernet(self, master_key: str) -> Fernet:
         """Create a Fernet cipher from the master key."""
-        # Use PBKDF2 to derive a proper 32-byte key
-        kdf = PBKDF2(
+        # Use PBKDF2HMAC to derive a proper 32-byte key
+        kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=b"alpaca_trader_salt",  # In production, use random salt per installation
