@@ -1,2 +1,2 @@
-web: gunicorn -c gunicorn_config.py "alpaca_trader.dashboard_secure:create_app()"
+web: gunicorn -c gunicorn_config.py wsgi:app
 release: python scripts/init_database.py

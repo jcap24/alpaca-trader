@@ -17,14 +17,13 @@ keepalive = 2
 proc_name = "alpaca_trader"
 
 # Logging
-accesslog = "logs/gunicorn_access.log"
-errorlog = "logs/gunicorn_error.log"
+accesslog = "-"  # stdout
+errorlog = "-"   # stderr
 loglevel = os.getenv("LOG_LEVEL", "info")
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
 
 # Server mechanics
 daemon = False
-pidfile = "gunicorn.pid"
 umask = 0
 user = None
 group = None
