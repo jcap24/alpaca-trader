@@ -465,9 +465,89 @@
             background: #1d4ed8;
         }
 
+        /* ── Scrollable table wrapper ── */
+        .table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ── Tablet (≤900px) ── */
         @media (max-width: 900px) {
             .charts-row { grid-template-columns: 1fr; }
             .cards { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* ── Mobile (≤640px) ── */
+        @media (max-width: 640px) {
+            /* Smooth momentum scrolling */
+            html { -webkit-text-size-adjust: 100%; }
+            body { -webkit-overflow-scrolling: touch; }
+
+            /* Header: stack title and badges */
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                padding: 12px 16px;
+            }
+            header h1 { font-size: 16px; }
+            .header-right {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            /* Reduce outer padding */
+            .container { padding: 12px; }
+
+            /* Smaller card values so they don't overflow */
+            .card { padding: 14px; }
+            .card-value { font-size: 20px; }
+            .cards { gap: 10px; }
+
+            /* Charts shorter on mobile */
+            .chart-wrap { height: 180px; }
+            .chart-container { padding: 14px; }
+            .period-buttons { flex-wrap: wrap; }
+
+            /* Section header: make room for the float button */
+            .section-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .section-header .btn-primary { float: none; }
+
+            /* Tables: ensure minimum column width so content stays readable */
+            table { min-width: 480px; }
+
+            /* Bigger touch targets for action buttons */
+            .btn-danger, .btn-activate, .btn-edit {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            .btn-primary, .btn-success, .btn-secondary {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+
+            /* Forms: stack inputs vertically */
+            .form-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .form-row input { width: 100%; }
+            .form-row button { width: 100%; }
+
+            /* Toggle rows: ensure label wraps cleanly */
+            .toggle-label { font-size: 12px; line-height: 1.4; max-width: calc(100% - 60px); }
+
+            /* Signals strength bar shrinks nicely */
+            .strength-bar { width: 40px; }
+
+            /* Details cell wraps instead of expanding */
+            .details-cell { white-space: normal; font-size: 10px; }
         }
     </style>
 </head>
@@ -530,21 +610,23 @@
         <!-- Signals -->
         <div class="section">
             <div class="section-header">Live Signals</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Name</th>
-                        <th>Price</th>
-                        <th>Signal</th>
-                        <th>Strength</th>
-                        <th>Indicator Details</th>
-                    </tr>
-                </thead>
-                <tbody id="signals-body">
-                    <tr><td colspan="6" class="empty-state loading">Loading signals...</td></tr>
-                </tbody>
-            </table>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Name</th>
+                            <th>Price</th>
+                            <th>Signal</th>
+                            <th>Strength</th>
+                            <th>Indicator Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="signals-body">
+                        <tr><td colspan="6" class="empty-state loading">Loading signals...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Watchlist Management -->
@@ -568,18 +650,20 @@
                 <div id="add-info" class="info-message"></div>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Name</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="watchlist-body">
-                    <tr><td colspan="3" class="empty-state loading">Loading watchlist...</td></tr>
-                </tbody>
-            </table>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="watchlist-body">
+                        <tr><td colspan="3" class="empty-state loading">Loading watchlist...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Indicator Settings -->
@@ -668,60 +752,66 @@
                 <div id="account-info" class="info-message"></div>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>API Key</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="accounts-body">
-                    <tr><td colspan="5" class="empty-state loading">Loading accounts...</td></tr>
-                </tbody>
-            </table>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>API Key</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accounts-body">
+                        <tr><td colspan="5" class="empty-state loading">Loading accounts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Positions -->
         <div class="section">
             <div class="section-header">Open Positions</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Qty</th>
-                        <th>Market Value</th>
-                        <th>Avg Entry</th>
-                        <th>P&L</th>
-                        <th>P&L %</th>
-                    </tr>
-                </thead>
-                <tbody id="positions-body">
-                    <tr><td colspan="6" class="empty-state loading">Loading positions...</td></tr>
-                </tbody>
-            </table>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Qty</th>
+                            <th>Market Value</th>
+                            <th>Avg Entry</th>
+                            <th>P&L</th>
+                            <th>P&L %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positions-body">
+                        <tr><td colspan="6" class="empty-state loading">Loading positions...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Trade History -->
         <div class="section">
             <div class="section-header">Trade History</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Symbol</th>
-                        <th>Side</th>
-                        <th>Qty</th>
-                        <th>Fill Price</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="orders-body">
-                    <tr><td colspan="6" class="empty-state loading">Loading trade history...</td></tr>
-                </tbody>
-            </table>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Symbol</th>
+                            <th>Side</th>
+                            <th>Qty</th>
+                            <th>Fill Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-body">
+                        <tr><td colspan="6" class="empty-state loading">Loading trade history...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
