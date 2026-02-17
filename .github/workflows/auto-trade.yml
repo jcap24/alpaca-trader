@@ -31,7 +31,7 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           ALPACA_PAPER: 'true'
-          TRADING_ENABLED: 'false'  # Change to 'true' when ready for live trades
+          TRADING_ENABLED: 'true'  # Change to 'true' when ready for live trades
         run: python headless_trader_once.py
         timeout-minutes: 5
 
