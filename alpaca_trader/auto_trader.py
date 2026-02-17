@@ -98,12 +98,20 @@ class AutoTrader:
             return
 
         # Check if it's within scheduled time (market hours only check)
+        # Use UTC and compare against ET market hours (ET = UTC-5 in winter, UTC-4 in summer)
         if settings_db.schedule_market_hours_only:
-            now = datetime.now().time()
-            market_open = time(9, 30)  # 9:30 AM
-            market_close = time(16, 0)  # 4:00 PM
-            if not (market_open <= now <= market_close):
-                logger.info("User %s: Outside market hours, skipping", user.username)
+            from datetime import timezone
+            import time as time_module
+            now_utc = datetime.now(timezone.utc)
+            # Market open: 9:30 AM ET = 14:30 UTC (winter) / 13:30 UTC (summer)
+            # Market close: 4:00 PM ET = 21:00 UTC (winter) / 20:00 UTC (summer)
+            # Use conservative window: 13:30-21:00 UTC covers both EST and EDT
+            market_open_utc = time(13, 30)
+            market_close_utc = time(21, 0)
+            now_utc_time = now_utc.time().replace(tzinfo=None)
+            if not (market_open_utc <= now_utc_time <= market_close_utc):
+                logger.info("User %s: Outside market hours (UTC %s), skipping",
+                            user.username, now_utc_time.strftime("%H:%M"))
                 return
 
         # Get user's active account
