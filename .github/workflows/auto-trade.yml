@@ -3,8 +3,11 @@ name: Automated Trading Bot
 on:
   schedule:
     # Every 5 minutes, Mon-Fri (market days)
-    # Times are UTC: 13:30-20:00 UTC = 9:30 AM - 4:00 PM ET
-    - cron: '*/5 13-20 * * 1-5'
+    # EST (winter): UTC-5  |  EDT (summer): UTC-4
+    # 14:30-21:00 UTC = 9:30 AM - 4:00 PM ET (winter)
+    # 13:30-20:00 UTC = 9:30 AM - 4:00 PM ET (summer)
+    # Using 13-21 UTC to cover both EST and EDT year-round
+    - cron: '*/5 13-21 * * 1-5'
 
   # Allow manual trigger from GitHub Actions tab
   workflow_dispatch:
@@ -31,7 +34,7 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           ALPACA_PAPER: 'true'
-          TRADING_ENABLED: 'true'  # Change to 'true' when ready for live trades
+          TRADING_ENABLED: 'true'
         run: python headless_trader_once.py
         timeout-minutes: 5
 
