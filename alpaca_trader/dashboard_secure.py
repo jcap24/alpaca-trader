@@ -657,7 +657,9 @@ def create_app(config=None) -> Flask:
                 "sma": {"enabled": settings.sma_enabled, "name": "SMA Crossover"},
                 "macd": {"enabled": settings.macd_enabled, "name": "MACD"},
                 "bollinger": {"enabled": settings.bollinger_enabled, "name": "Bollinger Bands"},
-                "schedule": {"enabled": settings.schedule_enabled, "name": "Automated Trading"}
+                "schedule": {"enabled": settings.schedule_enabled, "name": "Automated Trading"},
+                "signal_mode": settings.signal_mode,
+                "signal_min_agree": settings.signal_min_agree,
             })
 
         except Exception as e:
@@ -690,6 +692,16 @@ def create_app(config=None) -> Flask:
                 logger.info("User %s %s automated trading",
                            current_user.username,
                            "enabled" if settings.schedule_enabled else "disabled")
+            if "signal_mode" in data:
+                mode = str(data["signal_mode"])
+                if mode not in ("majority", "unanimous", "any"):
+                    return jsonify({"error": "signal_mode must be majority, unanimous, or any"}), 400
+                settings.signal_mode = mode
+            if "signal_min_agree" in data:
+                val = int(data["signal_min_agree"])
+                if val < 1 or val > 4:
+                    return jsonify({"error": "signal_min_agree must be between 1 and 4"}), 400
+                settings.signal_min_agree = val
 
             db.session.commit()
 
