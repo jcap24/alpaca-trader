@@ -438,12 +438,30 @@ def create_app(config=None) -> Flask:
     @login_required
     def api_portfolio_history():
         """Get portfolio history."""
-        period = request.args.get("period", "1M")
-        try:
-            from alpaca.trading.requests import GetPortfolioHistoryRequest
+        from alpaca.trading.requests import GetPortfolioHistoryRequest
+        from datetime import date
 
+        period = request.args.get("period", "1M")
+
+        # Choose timeframe based on period for appropriate resolution
+        timeframe_map = {
+            "1D": "15Min",
+            "1W": "1H",
+            "1M": "1D",
+            "3M": "1D",
+            "6M": "1D",
+            "1A": "1D",
+        }
+        timeframe = timeframe_map.get(period, "1D")
+
+        try:
             client = get_user_client()
-            history_req = GetPortfolioHistoryRequest(period=period, timeframe="1D")
+            history_req = GetPortfolioHistoryRequest(
+                period=period,
+                timeframe=timeframe,
+                date_end=date.today(),  # include today's data
+                extended_hours=False,
+            )
             history = client.get_portfolio_history(filter=history_req)
 
             return jsonify({
@@ -452,6 +470,7 @@ def create_app(config=None) -> Flask:
                 "profit_loss": history.profit_loss,
                 "profit_loss_pct": history.profit_loss_pct,
                 "base_value": history.base_value,
+                "timeframe": timeframe,
             })
         except Exception as e:
             logger.warning("Portfolio history unavailable: %s", e)
@@ -461,6 +480,7 @@ def create_app(config=None) -> Flask:
                 "profit_loss": [],
                 "profit_loss_pct": [],
                 "base_value": 0,
+                "timeframe": timeframe,
             })
 
     # =============================================================================
