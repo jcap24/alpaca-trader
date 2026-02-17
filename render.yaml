@@ -15,6 +15,10 @@ services:
     envVars:
       - key: FLASK_ENV
         value: production
+      - key: GUNICORN_WORKERS
+        value: "1"  # Keep at 1 on free tier - each worker uses ~300 MB
+      - key: GUNICORN_THREADS
+        value: "2"
       - key: SECRET_KEY
       - key: ENCRYPTION_KEY
         sync: false  # Set manually in Render dashboard - NEVER let this regenerate or stored API keys will be unreadable

@@ -7,11 +7,18 @@ bind = os.getenv("GUNICORN_BIND", "0.0.0.0:5000")
 backlog = 2048
 
 # Worker processes
-workers = int(os.getenv("GUNICORN_WORKERS", multiprocessing.cpu_count() * 2 + 1))
-worker_class = "sync"
+# On Render free tier (512 MB RAM), keep workers=1.
+# pandas + numpy + Flask fully loaded = ~250-350 MB per worker.
+# Multiple workers will exceed the memory limit.
+workers = int(os.getenv("GUNICORN_WORKERS", "1"))
+worker_class = "gthread"   # Thread-based: cheaper than forking new processes
+threads = int(os.getenv("GUNICORN_THREADS", "2"))  # 2 threads handles concurrent requests
 worker_connections = 1000
-timeout = 30
+timeout = 60  # Longer timeout since data fetching can be slow
 keepalive = 2
+
+# Share the loaded app across workers (copy-on-write memory sharing)
+preload_app = True
 
 # Process naming
 proc_name = "alpaca_trader"
