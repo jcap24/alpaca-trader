@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 import yaml
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from alpaca.trading.enums import QueryOrderStatus
 from alpaca.trading.requests import GetOrdersRequest
@@ -77,6 +77,11 @@ def create_app() -> Flask:
     @app.route("/")
     def index():
         return render_template("dashboard.html")
+
+    @app.route("/logout")
+    def logout():
+        # Legacy dashboard has no auth; just redirect home
+        return redirect(url_for("index"))
 
     @app.route("/api/account")
     def api_account():

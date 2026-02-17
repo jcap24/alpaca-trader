@@ -605,10 +605,12 @@
                 <div class="chart-header">
                     <span class="chart-title">Equity</span>
                     <div class="period-buttons">
-                        <button class="period-btn" data-period="1W">1W</button>
-                        <button class="period-btn active" data-period="1M">1M</button>
-                        <button class="period-btn" data-period="3M">3M</button>
-                        <button class="period-btn" data-period="1A">1Y</button>
+                        <button class="period-btn eq-period-btn" data-period="1D">1D</button>
+                        <button class="period-btn eq-period-btn" data-period="1W">1W</button>
+                        <button class="period-btn eq-period-btn active" data-period="1M">1M</button>
+                        <button class="period-btn eq-period-btn" data-period="3M">3M</button>
+                        <button class="period-btn eq-period-btn" data-period="6M">6M</button>
+                        <button class="period-btn eq-period-btn" data-period="1A">1Y</button>
                     </div>
                 </div>
                 <div class="chart-wrap">
@@ -618,6 +620,14 @@
             <div class="chart-container">
                 <div class="chart-header">
                     <span class="chart-title">Daily P&L</span>
+                    <div class="period-buttons">
+                        <button class="period-btn pl-period-btn" data-period="1D">1D</button>
+                        <button class="period-btn pl-period-btn active" data-period="1W">1W</button>
+                        <button class="period-btn pl-period-btn" data-period="1M">1M</button>
+                        <button class="period-btn pl-period-btn" data-period="3M">3M</button>
+                        <button class="period-btn pl-period-btn" data-period="6M">6M</button>
+                        <button class="period-btn pl-period-btn" data-period="1A">1Y</button>
+                    </div>
                 </div>
                 <div class="chart-wrap">
                     <canvas id="pl-chart"></canvas>
@@ -1486,49 +1496,42 @@
         let equityChart = null;
         let plChart = null;
 
-        async function refreshCharts(period) {
+        function makeLabels(timestamps, timeframe) {
+            const isIntraday = timeframe && (timeframe.includes('Min') || timeframe === '1H');
+            return timestamps.map(ts => {
+                const d = new Date(ts * 1000);
+                if (isIntraday) {
+                    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                }
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+        }
+
+        const baseScales = {
+            x: {
+                ticks: { color: '#64748b', maxTicksLimit: 10, font: { size: 10 } },
+                grid: { color: '#1e293b' },
+            },
+            y: {
+                ticks: { color: '#64748b', font: { size: 10 } },
+                grid: { color: '#334155' },
+            }
+        };
+
+        async function refreshEquityChart(period) {
             period = period || '1M';
             try {
                 const data = await fetchJSON('/api/portfolio-history?period=' + period);
+                if (!data.timestamp || !data.timestamp.length) return;
 
-                if (!data.timestamp || !data.timestamp.length) {
-                    return;
-                }
+                const labels = makeLabels(data.timestamp, data.timeframe);
 
-                const labels = data.timestamp.map(ts => {
-                    const d = new Date(ts * 1000);
-                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                });
-
-                const chartDefaults = {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                    },
-                    scales: {
-                        x: {
-                            ticks: { color: '#64748b', maxTicksLimit: 10, font: { size: 10 } },
-                            grid: { color: '#1e293b' },
-                        },
-                        y: {
-                            ticks: {
-                                color: '#64748b',
-                                font: { size: 10 },
-                                callback: v => '$' + Number(v).toLocaleString()
-                            },
-                            grid: { color: '#334155' },
-                        }
-                    }
-                };
-
-                // Equity chart
                 if (equityChart) equityChart.destroy();
                 const eqCtx = document.getElementById('equity-chart').getContext('2d');
                 equityChart = new Chart(eqCtx, {
                     type: 'line',
                     data: {
-                        labels: labels,
+                        labels,
                         datasets: [{
                             data: data.equity,
                             borderColor: '#3b82f6',
@@ -1539,19 +1542,45 @@
                             borderWidth: 2,
                         }]
                     },
-                    options: chartDefaults
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            ...baseScales,
+                            y: {
+                                ...baseScales.y,
+                                ticks: {
+                                    ...baseScales.y.ticks,
+                                    callback: v => '$' + Number(v).toLocaleString()
+                                }
+                            }
+                        }
+                    }
                 });
+                updateTimestamp();
+            } catch (e) {
+                console.error('Equity chart refresh failed:', e);
+            }
+        }
 
-                // P&L chart
-                if (plChart) plChart.destroy();
-                const plCtx = document.getElementById('pl-chart').getContext('2d');
+        async function refreshPLChart(period) {
+            period = period || '1W';
+            try {
+                const data = await fetchJSON('/api/portfolio-history?period=' + period);
+                if (!data.timestamp || !data.timestamp.length) return;
+
+                const labels = makeLabels(data.timestamp, data.timeframe);
                 const plColors = (data.profit_loss || []).map(v =>
                     v >= 0 ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)'
                 );
+
+                if (plChart) plChart.destroy();
+                const plCtx = document.getElementById('pl-chart').getContext('2d');
                 plChart = new Chart(plCtx, {
                     type: 'bar',
                     data: {
-                        labels: labels,
+                        labels,
                         datasets: [{
                             data: data.profit_loss || [],
                             backgroundColor: plColors,
@@ -1559,32 +1588,41 @@
                         }]
                     },
                     options: {
-                        ...chartDefaults,
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
                         scales: {
-                            ...chartDefaults.scales,
+                            ...baseScales,
                             y: {
-                                ...chartDefaults.scales.y,
+                                ...baseScales.y,
                                 ticks: {
-                                    ...chartDefaults.scales.y.ticks,
+                                    ...baseScales.y.ticks,
                                     callback: v => (v >= 0 ? '+$' : '-$') + Math.abs(v).toLocaleString()
                                 }
                             }
                         }
                     }
                 });
-
                 updateTimestamp();
             } catch (e) {
-                console.error('Charts refresh failed:', e);
+                console.error('P&L chart refresh failed:', e);
             }
         }
 
-        // --- Period selector ---
-        document.querySelectorAll('.period-btn').forEach(btn => {
+        // --- Period selectors (independent per chart) ---
+        document.querySelectorAll('.eq-period-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.eq-period-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                refreshCharts(btn.dataset.period);
+                refreshEquityChart(btn.dataset.period);
+            });
+        });
+
+        document.querySelectorAll('.pl-period-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.pl-period-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                refreshPLChart(btn.dataset.period);
             });
         });
 
@@ -1639,7 +1677,8 @@
         refreshWatchlist();
         refreshIndicators();
         refreshAccounts();
-        refreshCharts('1M');
+        refreshEquityChart('1M');  // default equity period
+        refreshPLChart('1W');      // default P&L period
 
         // --- Auto-refresh intervals ---
         setInterval(refreshAccount, 30000);
