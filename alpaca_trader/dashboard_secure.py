@@ -331,12 +331,19 @@ def create_app(config=None) -> Flask:
     @app.route("/api/auth/logout", methods=["POST"])
     @csrf.exempt
     def logout():
-        """Logout current user."""
+        """Logout current user (API endpoint)."""
         if current_user.is_authenticated:
             log_audit("logout")
         logout_user()
-        session.clear()
         return jsonify({"success": True}), 200
+
+    @app.route("/logout")
+    def logout_page():
+        """Logout via direct navigation (GET)."""
+        if current_user.is_authenticated:
+            log_audit("logout")
+        logout_user()
+        return redirect(url_for("login_page"))
 
     # =============================================================================
     # Dashboard Routes
@@ -432,11 +439,11 @@ def create_app(config=None) -> Flask:
     def api_portfolio_history():
         """Get portfolio history."""
         from alpaca.trading.requests import GetPortfolioHistoryRequest
-        from datetime import date, timedelta
+        from datetime import date
 
         period = request.args.get("period", "1M")
 
-        # Caller can override timeframe (e.g. P&L chart always wants "1D")
+        # Choose timeframe based on period for appropriate resolution
         timeframe_map = {
             "1D": "15Min",
             "1W": "1H",
@@ -445,14 +452,14 @@ def create_app(config=None) -> Flask:
             "6M": "1D",
             "1A": "1D",
         }
-        timeframe = request.args.get("timeframe") or timeframe_map.get(period, "1D")
+        timeframe = timeframe_map.get(period, "1D")
 
         try:
             client = get_user_client()
             history_req = GetPortfolioHistoryRequest(
                 period=period,
                 timeframe=timeframe,
-                date_end=date.today() + timedelta(days=1),  # +1 so holidays/weekends don't truncate current data
+                date_end=date.today(),  # include today's data
                 extended_hours=False,
             )
             history = client.get_portfolio_history(filter=history_req)

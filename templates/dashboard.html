@@ -259,6 +259,8 @@
             cursor: pointer;
             font-size: 12px;
             font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .btn-logout:hover {
@@ -574,7 +576,7 @@
         <div class="header-right">
             <span id="scheduler-badge" class="scheduler-badge scheduler-stopped">Scheduler: --</span>
             <span id="market-status" class="market-status status-closed">Market: --</span>
-            <button onclick="logout()" class="btn-logout">Logout</button>
+            <a href="/logout" class="btn-logout">Logout</a>
         </div>
     </header>
 
@@ -605,12 +607,12 @@
                 <div class="chart-header">
                     <span class="chart-title">Equity</span>
                     <div class="period-buttons">
-                        <button class="period-btn eq-period-btn" data-period="1D">1D</button>
-                        <button class="period-btn eq-period-btn" data-period="1W">1W</button>
-                        <button class="period-btn eq-period-btn active" data-period="1M">1M</button>
-                        <button class="period-btn eq-period-btn" data-period="3M">3M</button>
-                        <button class="period-btn eq-period-btn" data-period="6M">6M</button>
-                        <button class="period-btn eq-period-btn" data-period="1A">1Y</button>
+                        <button class="period-btn" data-period="1D">1D</button>
+                        <button class="period-btn" data-period="1W">1W</button>
+                        <button class="period-btn active" data-period="1M">1M</button>
+                        <button class="period-btn" data-period="3M">3M</button>
+                        <button class="period-btn" data-period="6M">6M</button>
+                        <button class="period-btn" data-period="1A">1Y</button>
                     </div>
                 </div>
                 <div class="chart-wrap">
@@ -883,16 +885,6 @@
 
         function updateTimestamp() {
             document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
-        }
-
-        // --- Logout ---
-        async function logout() {
-            try {
-                await fetch('/api/auth/logout', { method: 'POST' });
-            } catch (e) {
-                // ignore network errors, redirect anyway
-            }
-            window.location.href = '/login';
         }
 
         // --- Account ---
@@ -1530,7 +1522,15 @@
                     return;
                 }
 
-                const labels = makeLabels(data.timestamp, data.timeframe);
+                // Use time labels for intraday, date labels for daily
+                const isIntraday = data.timeframe && (data.timeframe.includes('Min') || data.timeframe === '1H');
+                const labels = data.timestamp.map(ts => {
+                    const d = new Date(ts * 1000);
+                    if (isIntraday) {
+                        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    }
+                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
 
                 if (equityChart) equityChart.destroy();
                 const eqCtx = document.getElementById('equity-chart').getContext('2d');
@@ -1687,8 +1687,7 @@
         refreshWatchlist();
         refreshIndicators();
         refreshAccounts();
-        refreshEquityChart('1M');  // default equity period
-        refreshPLChart('1W');      // default P&L period
+        refreshCharts('1M');  // default to 1M on load
 
         // --- Auto-refresh intervals ---
         setInterval(refreshAccount, 30000);
