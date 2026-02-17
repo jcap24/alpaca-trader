@@ -335,16 +335,14 @@ def create_app(config=None) -> Flask:
         if current_user.is_authenticated:
             log_audit("logout")
         logout_user()
-        session.clear()
         return jsonify({"success": True}), 200
 
     @app.route("/logout")
     def logout_page():
-        """Logout via direct navigation (GET) — more reliable than AJAX logout."""
+        """Logout via direct navigation (GET)."""
         if current_user.is_authenticated:
             log_audit("logout")
         logout_user()
-        session.clear()
         return redirect(url_for("login_page"))
 
     # =============================================================================
