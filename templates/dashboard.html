@@ -250,6 +250,23 @@
             font-style: italic;
         }
 
+        .btn-logout {
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid #475569;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .btn-logout:hover {
+            background: #7f1d1d;
+            color: #fca5a5;
+            border-color: #7f1d1d;
+        }
+
         .btn-primary {
             background: #2563eb;
             color: white;
@@ -557,6 +574,7 @@
         <div class="header-right">
             <span id="scheduler-badge" class="scheduler-badge scheduler-stopped">Scheduler: --</span>
             <span id="market-status" class="market-status status-closed">Market: --</span>
+            <button onclick="logout()" class="btn-logout">Logout</button>
         </div>
     </header>
 
@@ -855,6 +873,16 @@
 
         function updateTimestamp() {
             document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+        }
+
+        // --- Logout ---
+        async function logout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+            } catch (e) {
+                // ignore network errors, redirect anyway
+            }
+            window.location.href = '/login';
         }
 
         // --- Account ---
