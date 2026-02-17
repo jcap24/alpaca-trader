@@ -23,9 +23,9 @@ indicators:
 
 signal:
   # How to combine indicators: "majority", "unanimous", "any"
-  mode: "majority"
+  mode: "any"
   # Minimum indicators that must agree (only used in "majority" mode)
-  min_agree: 1
+  min_agree: 2
 
 execution:
   order_type: "market"
