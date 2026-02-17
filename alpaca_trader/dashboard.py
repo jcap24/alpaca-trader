@@ -144,12 +144,26 @@ def create_app() -> Flask:
 
     @app.route("/api/portfolio-history")
     def api_portfolio_history():
+        from alpaca.trading.requests import GetPortfolioHistoryRequest
+        from datetime import date, timedelta
+
         period = request.args.get("period", "1M")
+        # Caller can override timeframe (e.g. P&L chart always wants "1D")
+        timeframe_map = {
+            "1D": "15Min",
+            "1W": "1H",
+            "1M": "1D",
+            "3M": "1D",
+            "6M": "1D",
+            "1A": "1D",
+        }
+        timeframe = request.args.get("timeframe") or timeframe_map.get(period, "1D")
         try:
-            from alpaca.trading.requests import GetPortfolioHistoryRequest
             history_req = GetPortfolioHistoryRequest(
                 period=period,
-                timeframe="1D",
+                timeframe=timeframe,
+                date_end=date.today() + timedelta(days=1),  # +1 so holidays/weekends don't truncate current data
+                extended_hours=False,
             )
             history = _client.get_portfolio_history(filter=history_req)
             return jsonify({
@@ -158,6 +172,7 @@ def create_app() -> Flask:
                 "profit_loss": history.profit_loss,
                 "profit_loss_pct": history.profit_loss_pct,
                 "base_value": history.base_value,
+                "timeframe": timeframe,
             })
         except Exception as e:
             logger.warning("Portfolio history unavailable: %s", e)
@@ -167,6 +182,7 @@ def create_app() -> Flask:
                 "profit_loss": [],
                 "profit_loss_pct": [],
                 "base_value": 0,
+                "timeframe": timeframe,
             })
 
     @app.route("/api/watchlist")

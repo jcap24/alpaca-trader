@@ -436,7 +436,7 @@ def create_app(config=None) -> Flask:
 
         period = request.args.get("period", "1M")
 
-        # Choose timeframe based on period for appropriate resolution
+        # Caller can override timeframe (e.g. P&L chart always wants "1D")
         timeframe_map = {
             "1D": "15Min",
             "1W": "1H",
@@ -445,7 +445,7 @@ def create_app(config=None) -> Flask:
             "6M": "1D",
             "1A": "1D",
         }
-        timeframe = timeframe_map.get(period, "1D")
+        timeframe = request.args.get("timeframe") or timeframe_map.get(period, "1D")
 
         try:
             client = get_user_client()

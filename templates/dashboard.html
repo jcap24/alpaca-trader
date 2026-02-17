@@ -1520,9 +1520,15 @@
 
         async function refreshEquityChart(period) {
             period = period || '1M';
+            // Equity chart uses intraday resolution for short periods
+            const eqTimeframeMap = { '1D': '15Min', '1W': '1H', '1M': '1D', '3M': '1D', '6M': '1D', '1A': '1D' };
+            const timeframe = eqTimeframeMap[period] || '1D';
             try {
-                const data = await fetchJSON('/api/portfolio-history?period=' + period);
-                if (!data.timestamp || !data.timestamp.length) return;
+                const data = await fetchJSON('/api/portfolio-history?period=' + period + '&timeframe=' + timeframe);
+                if (!data.timestamp || !data.timestamp.length) {
+                    if (equityChart) { equityChart.destroy(); equityChart = null; }
+                    return;
+                }
 
                 const labels = makeLabels(data.timestamp, data.timeframe);
 
@@ -1566,9 +1572,13 @@
 
         async function refreshPLChart(period) {
             period = period || '1W';
+            // P&L chart always uses daily bars so each bar = one trading day
             try {
-                const data = await fetchJSON('/api/portfolio-history?period=' + period);
-                if (!data.timestamp || !data.timestamp.length) return;
+                const data = await fetchJSON('/api/portfolio-history?period=' + period + '&timeframe=1D');
+                if (!data.timestamp || !data.timestamp.length) {
+                    if (plChart) { plChart.destroy(); plChart = null; }
+                    return;
+                }
 
                 const labels = makeLabels(data.timestamp, data.timeframe);
                 const plColors = (data.profit_loss || []).map(v =>
