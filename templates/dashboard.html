@@ -259,6 +259,8 @@
             cursor: pointer;
             font-size: 12px;
             font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .btn-logout:hover {
@@ -574,7 +576,7 @@
         <div class="header-right">
             <span id="scheduler-badge" class="scheduler-badge scheduler-stopped">Scheduler: --</span>
             <span id="market-status" class="market-status status-closed">Market: --</span>
-            <button onclick="logout()" class="btn-logout">Logout</button>
+            <a href="/logout" class="btn-logout">Logout</a>
         </div>
     </header>
 
@@ -873,16 +875,6 @@
 
         function updateTimestamp() {
             document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
-        }
-
-        // --- Logout ---
-        async function logout() {
-            try {
-                await fetch('/api/auth/logout', { method: 'POST' });
-            } catch (e) {
-                // ignore network errors, redirect anyway
-            }
-            window.location.href = '/login';
         }
 
         // --- Account ---

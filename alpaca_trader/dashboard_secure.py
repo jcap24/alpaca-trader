@@ -331,12 +331,21 @@ def create_app(config=None) -> Flask:
     @app.route("/api/auth/logout", methods=["POST"])
     @csrf.exempt
     def logout():
-        """Logout current user."""
+        """Logout current user (API endpoint)."""
         if current_user.is_authenticated:
             log_audit("logout")
         logout_user()
         session.clear()
         return jsonify({"success": True}), 200
+
+    @app.route("/logout")
+    def logout_page():
+        """Logout via direct navigation (GET) — more reliable than AJAX logout."""
+        if current_user.is_authenticated:
+            log_audit("logout")
+        logout_user()
+        session.clear()
+        return redirect(url_for("login_page"))
 
     # =============================================================================
     # Dashboard Routes
