@@ -20,7 +20,7 @@ from alpaca_trader.config import (
 from alpaca_trader.data import fetch_bars
 from alpaca_trader.indicators import compute_all
 from alpaca_trader.models import Account, AuditLog, Settings as SettingsModel, User, Watchlist, db
-from alpaca_trader.portfolio import PortfolioManager
+from alpaca_trader.executor import OrderExecutor
 from alpaca_trader.security import EncryptionManager
 from alpaca_trader.signals import Action, evaluate_signals
 
@@ -139,8 +139,8 @@ class AutoTrader:
         # Fetch bars and evaluate signals
         bars = fetch_bars(client, symbols, settings.data.timeframe, settings.data.lookback_days)
 
-        # Create portfolio manager
-        pm = PortfolioManager(client, settings)
+        # Create order executor
+        executor = OrderExecutor(client, settings)
 
         signals_processed = 0
         trades_executed = 0
@@ -163,8 +163,8 @@ class AutoTrader:
 
                 # Execute trade based on signal
                 if signal.action == Action.BUY:
-                    order = pm.place_order(symbol, "buy")
-                    if order:
+                    result = executor.execute_signal(signal)
+                    if result:
                         trades_executed += 1
                         self._log_audit(
                             user_id=user.id,
@@ -174,14 +174,15 @@ class AutoTrader:
                             details={
                                 "symbol": symbol,
                                 "signal_strength": signal.strength,
-                                "order_id": str(order.id) if hasattr(order, 'id') else None
+                                "order_id": result.get("order_id")
                             }
                         )
-                        logger.info("User %s: BUY order placed for %s", user.username, symbol)
+                        logger.info("User %s: BUY order placed for %s - Order ID: %s",
+                                    user.username, symbol, result.get("order_id"))
 
                 elif signal.action == Action.SELL:
-                    order = pm.place_order(symbol, "sell")
-                    if order:
+                    result = executor.execute_signal(signal)
+                    if result:
                         trades_executed += 1
                         self._log_audit(
                             user_id=user.id,
@@ -191,10 +192,11 @@ class AutoTrader:
                             details={
                                 "symbol": symbol,
                                 "signal_strength": signal.strength,
-                                "order_id": str(order.id) if hasattr(order, 'id') else None
+                                "order_id": result.get("order_id")
                             }
                         )
-                        logger.info("User %s: SELL order placed for %s", user.username, symbol)
+                        logger.info("User %s: SELL order placed for %s - Order ID: %s",
+                                    user.username, symbol, result.get("order_id"))
 
             except Exception as e:
                 logger.exception("Failed to process symbol %s for user %s: %s", symbol, user.username, e)
