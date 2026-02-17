@@ -14,11 +14,19 @@ class PortfolioManager:
     def get_summary(self) -> dict:
         """Return account summary: equity, cash, buying power."""
         account = self.client.get_account()
+
+        def safe_float(val, fallback=0.0):
+            try:
+                return float(val) if val is not None else fallback
+            except (TypeError, ValueError):
+                return fallback
+
+        equity = safe_float(account.equity)
         return {
-            "equity": float(account.equity),
-            "cash": float(account.cash),
-            "buying_power": float(account.buying_power),
-            "portfolio_value": float(account.portfolio_value),
+            "equity": equity,
+            "cash": safe_float(account.cash),
+            "buying_power": safe_float(account.buying_power),
+            "portfolio_value": safe_float(account.portfolio_value, equity),
         }
 
     def get_positions_summary(self) -> list[dict]:
