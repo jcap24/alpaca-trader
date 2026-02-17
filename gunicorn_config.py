@@ -17,9 +17,6 @@ worker_connections = 1000
 timeout = 60  # Longer timeout since data fetching can be slow
 keepalive = 2
 
-# Share the loaded app across workers (copy-on-write memory sharing)
-preload_app = True
-
 # Process naming
 proc_name = "alpaca_trader"
 
