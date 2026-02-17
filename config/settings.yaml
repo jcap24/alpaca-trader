@@ -43,7 +43,7 @@ data:
 
 schedule:
   enabled: true
-  interval_minutes: 10
+  interval_minutes: 5
   # Cron expression, e.g. "*/15 9-16 * * 1-5" for every 15min during market hours
   cron: null
   market_hours_only: true

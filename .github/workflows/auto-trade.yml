@@ -1,0 +1,44 @@
+name: Automated Trading Bot
+
+on:
+  schedule:
+    # Every 5 minutes, Mon-Fri (market days)
+    # Times are UTC: 13:30-20:00 UTC = 9:30 AM - 4:00 PM ET
+    - cron: '*/5 13-20 * * 1-5'
+
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  trade:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'  # Cache pip installs to speed up runs
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run headless trader
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          ALPACA_PAPER: 'true'
+          TRADING_ENABLED: 'false'  # Change to 'true' when ready for live trades
+        run: python headless_trader_once.py
+        timeout-minutes: 5
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trading-logs-${{ github.run_number }}
+          path: headless_trader.log
+          retention-days: 7
