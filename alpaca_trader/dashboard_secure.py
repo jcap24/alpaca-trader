@@ -439,14 +439,15 @@ def create_app(config=None) -> Flask:
     def api_portfolio_history():
         """Get portfolio history."""
         from alpaca.trading.requests import GetPortfolioHistoryRequest
-        from datetime import date
+        from datetime import date, timedelta
 
         period = request.args.get("period", "1M")
 
         # Choose timeframe based on period for appropriate resolution
+        # 1D uses intraday bars; 1W+ uses daily bars to keep date labels readable
         timeframe_map = {
             "1D": "15Min",
-            "1W": "1H",
+            "1W": "1D",
             "1M": "1D",
             "3M": "1D",
             "6M": "1D",
@@ -459,7 +460,7 @@ def create_app(config=None) -> Flask:
             history_req = GetPortfolioHistoryRequest(
                 period=period,
                 timeframe=timeframe,
-                date_end=date.today(),  # include today's data
+                date_end=date.today() + timedelta(days=1),  # +1 ensures last trading day is included on weekends/holidays
                 extended_hours=False,
             )
             history = client.get_portfolio_history(filter=history_req)
@@ -687,6 +688,7 @@ def create_app(config=None) -> Flask:
                 "schedule": {"enabled": settings.schedule_enabled, "name": "Automated Trading"},
                 "signal_mode": settings.signal_mode,
                 "signal_min_agree": settings.signal_min_agree,
+                "extended_hours": settings.execution_extended_hours,
             })
 
         except Exception as e:
@@ -729,6 +731,11 @@ def create_app(config=None) -> Flask:
                 if val < 1 or val > 4:
                     return jsonify({"error": "signal_min_agree must be between 1 and 4"}), 400
                 settings.signal_min_agree = val
+            if "extended_hours" in data:
+                settings.execution_extended_hours = bool(data["extended_hours"])
+                logger.info("User %s %s extended hours trading",
+                           current_user.username,
+                           "enabled" if settings.execution_extended_hours else "disabled")
 
             db.session.commit()
 

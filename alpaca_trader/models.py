@@ -130,6 +130,7 @@ class Settings(db.Model):
     execution_position_size_pct = db.Column(db.Float, default=10.0, nullable=False)
     execution_max_positions = db.Column(db.Integer, default=5, nullable=False)
     execution_allow_short = db.Column(db.Boolean, default=False, nullable=False)
+    execution_extended_hours = db.Column(db.Boolean, default=False, nullable=False)
 
     # Schedule settings
     schedule_enabled = db.Column(db.Boolean, default=False, nullable=False)
