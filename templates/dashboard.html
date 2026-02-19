@@ -163,6 +163,34 @@
             color: #cbd5e1;
         }
 
+        .section-header.collapsible {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            user-select: none;
+        }
+
+        .section-header.collapsible:hover {
+            color: #e2e8f0;
+        }
+
+        .collapse-chevron {
+            font-size: 10px;
+            color: #64748b;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .collapse-chevron.open {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-body {
+            overflow: hidden;
+            transition: max-height 0.25s ease;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -631,60 +659,70 @@
 
         <!-- Signals -->
         <div class="section">
-            <div class="section-header">Live Signals</div>
-            <div class="table-scroll">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Symbol</th>
-                            <th>Name</th>
-                            <th>Price</th>
-                            <th>Signal</th>
-                            <th>Strength</th>
-                            <th>Indicator Details</th>
-                        </tr>
-                    </thead>
-                    <tbody id="signals-body">
-                        <tr><td colspan="6" class="empty-state loading">Loading signals...</td></tr>
-                    </tbody>
-                </table>
+            <div class="section-header collapsible" onclick="toggleSection('signals-body-wrap', this)">
+                <span>Live Signals</span>
+                <span class="collapse-chevron">▼</span>
+            </div>
+            <div id="signals-body-wrap" class="collapsible-body" style="max-height: 0;">
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>Signal</th>
+                                <th>Strength</th>
+                                <th>Indicator Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="signals-body">
+                            <tr><td colspan="6" class="empty-state loading">Loading signals...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- Watchlist Management -->
         <div class="section">
-            <div class="section-header">
-                Watchlist Management
-                <button id="add-symbol-btn" class="btn-primary">+ Add Symbol</button>
-            </div>
-
-            <!-- Add Symbol Form (hidden by default) -->
-            <div id="add-symbol-form" class="form-container" style="display: none;">
-                <div class="form-row">
-                    <input type="text" id="new-symbol" placeholder="Enter ticker symbol (e.g., AAPL)" maxlength="5" />
-                    <button id="submit-symbol" class="btn-success">
-                        <span id="add-btn-text">Add</span>
-                        <span id="add-btn-loading" style="display: none;">Validating...</span>
-                    </button>
-                    <button id="cancel-add" class="btn-secondary">Cancel</button>
+            <div class="section-header collapsible" onclick="toggleSection('watchlist-body-wrap', this)">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span>Watchlist Management</span>
+                    <button id="add-symbol-btn" class="btn-primary" onclick="event.stopPropagation(); toggleAddSymbolForm()">+ Add Symbol</button>
                 </div>
-                <div id="add-error" class="error-message"></div>
-                <div id="add-info" class="info-message"></div>
+                <span class="collapse-chevron">▼</span>
             </div>
 
-            <div class="table-scroll">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Symbol</th>
-                            <th>Name</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="watchlist-body">
-                        <tr><td colspan="3" class="empty-state loading">Loading watchlist...</td></tr>
-                    </tbody>
-                </table>
+            <div id="watchlist-body-wrap" class="collapsible-body" style="max-height: 0;">
+                <!-- Add Symbol Form (hidden by default) -->
+                <div id="add-symbol-form" class="form-container" style="display: none;">
+                    <div class="form-row">
+                        <input type="text" id="new-symbol" placeholder="Enter ticker symbol (e.g., AAPL)" maxlength="5" />
+                        <button id="submit-symbol" class="btn-success">
+                            <span id="add-btn-text">Add</span>
+                            <span id="add-btn-loading" style="display: none;">Validating...</span>
+                        </button>
+                        <button id="cancel-add" class="btn-secondary">Cancel</button>
+                    </div>
+                    <div id="add-error" class="error-message"></div>
+                    <div id="add-info" class="info-message"></div>
+                </div>
+
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Name</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="watchlist-body">
+                            <tr><td colspan="3" class="empty-state loading">Loading watchlist...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -955,6 +993,43 @@
                 updateTimestamp();
             } catch (e) {
                 console.error('Positions refresh failed:', e);
+            }
+        }
+
+        // --- Collapsible sections ---
+        function toggleSection(bodyId, header) {
+            const body = document.getElementById(bodyId);
+            const chevron = header.querySelector('.collapse-chevron');
+            const isOpen = body.style.maxHeight !== '0px' && body.style.maxHeight !== '';
+            if (isOpen) {
+                // Snap from 'none' to measured height first, then animate to 0
+                body.style.maxHeight = body.scrollHeight + 'px';
+                requestAnimationFrame(() => {
+                    body.style.maxHeight = '0';
+                });
+                chevron.classList.remove('open');
+            } else {
+                body.style.maxHeight = body.scrollHeight + 'px';
+                chevron.classList.add('open');
+                // After animation, allow unrestricted growth for dynamic content
+                body.addEventListener('transitionend', () => {
+                    if (body.style.maxHeight !== '0px') body.style.maxHeight = 'none';
+                }, { once: true });
+            }
+        }
+
+        function toggleAddSymbolForm() {
+            const form = document.getElementById('add-symbol-form');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('add-error').classList.remove('show');
+            if (document.getElementById('add-info')) {
+                document.getElementById('add-info').classList.remove('show');
+            }
+            // If section is collapsed, expand it first
+            const wrap = document.getElementById('watchlist-body-wrap');
+            if (wrap.style.maxHeight === '0px' || wrap.style.maxHeight === '') {
+                const header = wrap.previousElementSibling;
+                toggleSection('watchlist-body-wrap', header);
             }
         }
 
@@ -1633,13 +1708,6 @@
 
         // --- Watchlist form event listeners ---
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('add-symbol-btn').addEventListener('click', () => {
-                const form = document.getElementById('add-symbol-form');
-                form.style.display = form.style.display === 'none' ? 'block' : 'none';
-                document.getElementById('add-error').classList.remove('show');
-                document.getElementById('add-info').classList.remove('show');
-            });
-
             document.getElementById('submit-symbol').addEventListener('click', addSymbol);
 
             document.getElementById('cancel-add').addEventListener('click', () => {
