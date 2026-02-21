@@ -1,49 +1,36 @@
+data:
+  lookback_days: 100
+  timeframe: 1Day
+execution:
+  allow_short: false
+  max_positions: 10
+  order_type: market
+  position_size_pct: 5.0
+  time_in_force: day
 indicators:
-  rsi:
-    enabled: false
-    period: 14
-    overbought: 70
-    oversold: 30
-
-  sma_crossover:
-    enabled: true
-    short_period: 20
-    long_period: 50
-
-  macd:
-    enabled: false
-    fast_period: 12
-    slow_period: 26
-    signal_period: 9
-
   bollinger_bands:
-    enabled: false
+    enabled: true
     period: 20
     std_dev: 2.0
-
-signal:
-  # How to combine indicators: "majority", "unanimous", "any"
-  mode: "any"
-  # Minimum indicators that must agree (only used in "majority" mode)
-  min_agree: 2
-
-execution:
-  order_type: "market"
-  time_in_force: "day"
-  # Percent of portfolio equity per trade
-  position_size_pct: 5.0
-  max_positions: 10
-  allow_short: false
-
-data:
-  # Bar timeframe: "1Min", "5Min", "15Min", "1Hour", "1Day"
-  timeframe: "1Day"
-  # How many days of history to fetch for indicator calculation
-  lookback_days: 100
-
+  macd:
+    enabled: true
+    fast_period: 12
+    signal_period: 9
+    slow_period: 26
+  rsi:
+    enabled: true
+    overbought: 70
+    oversold: 30
+    period: 14
+  sma_crossover:
+    enabled: true
+    long_period: 50
+    short_period: 20
 schedule:
+  cron: null
   enabled: true
   interval_minutes: 5
-  # Cron expression, e.g. "*/15 9-16 * * 1-5" for every 15min during market hours
-  cron: null
   market_hours_only: true
+signal:
+  min_agree: 2
+  mode: any
