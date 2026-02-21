@@ -13,6 +13,7 @@ from pathlib import Path
 # Add parent directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from flask_migrate import upgrade
 from alpaca_trader.models import db, User
 from alpaca_trader.security import PasswordManager
 from alpaca_trader.dashboard_secure import create_app
@@ -23,7 +24,14 @@ def init_database():
     app = create_app()
 
     with app.app_context():
-        # Create all tables
+        # Run any pending migrations (adds new columns, etc.)
+        try:
+            upgrade()
+            print("[SUCCESS] Database migrations applied")
+        except Exception as e:
+            print(f"[WARNING] Migration step failed (may be OK on first run): {e}")
+
+        # Create all tables (handles fresh installs where migrations haven't run yet)
         db.create_all()
         print("[SUCCESS] Database tables created/verified")
 

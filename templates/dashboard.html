@@ -163,6 +163,34 @@
             color: #cbd5e1;
         }
 
+        .section-header.collapsible {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            user-select: none;
+        }
+
+        .section-header.collapsible:hover {
+            color: #e2e8f0;
+        }
+
+        .collapse-chevron {
+            font-size: 10px;
+            color: #64748b;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .collapse-chevron.open {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-body {
+            overflow: hidden;
+            transition: max-height 0.25s ease;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -236,40 +264,6 @@
             text-align: center;
             color: #64748b;
             font-size: 13px;
-        }
-
-        /* Collapsible Sections */
-        .section-header.collapsible {
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .section-header.collapsible:hover {
-            background: #253348;
-        }
-
-        .collapse-chevron {
-            transition: transform 0.3s ease;
-            font-size: 12px;
-            color: #64748b;
-            margin-left: 12px;
-        }
-
-        .collapse-chevron.collapsed {
-            transform: rotate(-90deg);
-        }
-
-        .collapsible-body {
-            overflow: hidden;
-            max-height: 2000px;
-            transition: max-height 0.3s ease;
-        }
-
-        .collapsible-body.collapsed {
-            max-height: 0;
         }
 
         footer {
@@ -667,9 +661,9 @@
         <div class="section">
             <div class="section-header collapsible" onclick="toggleSection('signals-body-wrap', this)">
                 <span>Live Signals</span>
-                <span class="collapse-chevron">&#9660;</span>
+                <span class="collapse-chevron">▼</span>
             </div>
-            <div id="signals-body-wrap" class="collapsible-body">
+            <div id="signals-body-wrap" class="collapsible-body" style="max-height: 0;">
                 <div class="table-scroll">
                     <table>
                         <thead>
@@ -693,13 +687,14 @@
         <!-- Watchlist Management -->
         <div class="section">
             <div class="section-header collapsible" onclick="toggleSection('watchlist-body-wrap', this)">
-                <span>Watchlist Management</span>
-                <span style="display: flex; align-items: center; gap: 8px;">
-                    <button id="add-symbol-btn" class="btn-primary" onclick="event.stopPropagation()">+ Add Symbol</button>
-                    <span class="collapse-chevron">&#9660;</span>
-                </span>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span>Watchlist Management</span>
+                    <button id="add-symbol-btn" class="btn-primary" onclick="event.stopPropagation(); toggleAddSymbolForm()">+ Add Symbol</button>
+                </div>
+                <span class="collapse-chevron">▼</span>
             </div>
-            <div id="watchlist-body-wrap" class="collapsible-body">
+
+            <div id="watchlist-body-wrap" class="collapsible-body" style="max-height: 0;">
                 <!-- Add Symbol Form (hidden by default) -->
                 <div id="add-symbol-form" class="form-container" style="display: none;">
                     <div class="form-row">
@@ -798,6 +793,13 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
+                <div class="toggle-container" style="margin-bottom: 12px;">
+                    <span class="toggle-label" style="font-weight: 600; color: #f1f5f9;">Extended Hours Trading</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-extended-hours" onchange="toggleExtendedHours(this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
                 <div style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
                     <p style="margin: 0 0 8px 0;"><strong style="color: #e2e8f0;">How it works:</strong></p>
                     <ul style="margin: 0; padding-left: 20px;">
@@ -806,6 +808,7 @@
                         <li>Uses your active trading account and watchlist</li>
                         <li>All trades are logged in the audit trail</li>
                         <li>Runs 24/7 in the background (no need to keep dashboard open)</li>
+                        <li><strong>Extended Hours:</strong> enables pre-market (4 AM ET) and after-hours (8 PM ET) trading using limit orders at signal price</li>
                     </ul>
                     <p style="margin: 12px 0 0 0; padding: 8px; background: #fef3c7; color: #92400e; border-radius: 4px;">
                         <strong>⚠️ Warning:</strong> Automated trading will execute real trades! Make sure you've tested your strategy and understand the risks before enabling.
@@ -906,14 +909,6 @@
     </footer>
 
     <script>
-        // --- Collapsible Sections ---
-        function toggleSection(bodyId, header) {
-            const body = document.getElementById(bodyId);
-            const chevron = header.querySelector('.collapse-chevron');
-            body.classList.toggle('collapsed');
-            chevron.classList.toggle('collapsed');
-        }
-
         // --- Utility ---
         function fmt(n) {
             if (n == null) return '--';
@@ -998,6 +993,43 @@
                 updateTimestamp();
             } catch (e) {
                 console.error('Positions refresh failed:', e);
+            }
+        }
+
+        // --- Collapsible sections ---
+        function toggleSection(bodyId, header) {
+            const body = document.getElementById(bodyId);
+            const chevron = header.querySelector('.collapse-chevron');
+            const isOpen = body.style.maxHeight !== '0px' && body.style.maxHeight !== '';
+            if (isOpen) {
+                // Snap from 'none' to measured height first, then animate to 0
+                body.style.maxHeight = body.scrollHeight + 'px';
+                requestAnimationFrame(() => {
+                    body.style.maxHeight = '0';
+                });
+                chevron.classList.remove('open');
+            } else {
+                body.style.maxHeight = body.scrollHeight + 'px';
+                chevron.classList.add('open');
+                // After animation, allow unrestricted growth for dynamic content
+                body.addEventListener('transitionend', () => {
+                    if (body.style.maxHeight !== '0px') body.style.maxHeight = 'none';
+                }, { once: true });
+            }
+        }
+
+        function toggleAddSymbolForm() {
+            const form = document.getElementById('add-symbol-form');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('add-error').classList.remove('show');
+            if (document.getElementById('add-info')) {
+                document.getElementById('add-info').classList.remove('show');
+            }
+            // If section is collapsed, expand it first
+            const wrap = document.getElementById('watchlist-body-wrap');
+            if (wrap.style.maxHeight === '0px' || wrap.style.maxHeight === '') {
+                const header = wrap.previousElementSibling;
+                toggleSection('watchlist-body-wrap', header);
             }
         }
 
@@ -1212,6 +1244,9 @@
                 document.getElementById('toggle-macd').checked = data.macd.enabled;
                 document.getElementById('toggle-bollinger').checked = data.bollinger.enabled;
                 document.getElementById('toggle-schedule').checked = data.schedule.enabled;
+                if (data.extended_hours != null) {
+                    document.getElementById('toggle-extended-hours').checked = data.extended_hours;
+                }
 
                 // Update signal mode
                 if (data.signal_mode) {
@@ -1300,6 +1335,30 @@
                 console.error('Failed to toggle scheduler:', e);
                 alert('Error: ' + e.message);
                 // Revert the toggle
+                await refreshIndicators();
+            }
+        }
+
+        async function toggleExtendedHours(enabled) {
+            try {
+                const resp = await fetch('/api/indicators', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ extended_hours: enabled })
+                });
+
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    alert('Failed to update extended hours: ' + (data.error || 'Unknown error'));
+                    await refreshIndicators();
+                    return;
+                }
+
+                console.log(`Extended hours trading ${enabled ? 'enabled' : 'disabled'}`);
+
+            } catch (e) {
+                console.error('Failed to toggle extended hours:', e);
+                alert('Error: ' + e.message);
                 await refreshIndicators();
             }
         }
@@ -1537,6 +1596,15 @@
                 const data = await fetchJSON('/api/portfolio-history?period=' + period);
 
                 if (!data.timestamp || !data.timestamp.length) {
+                    // Clear both charts and show a placeholder
+                    if (equityChart) { equityChart.destroy(); equityChart = null; }
+                    if (plChart) { plChart.destroy(); plChart = null; }
+                    const eqCtx = document.getElementById('equity-chart').getContext('2d');
+                    eqCtx.clearRect(0, 0, eqCtx.canvas.width, eqCtx.canvas.height);
+                    eqCtx.fillStyle = '#64748b';
+                    eqCtx.font = '13px sans-serif';
+                    eqCtx.textAlign = 'center';
+                    eqCtx.fillText('No trading data available for this period', eqCtx.canvas.width / 2, eqCtx.canvas.height / 2);
                     return;
                 }
 
@@ -1640,13 +1708,6 @@
 
         // --- Watchlist form event listeners ---
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('add-symbol-btn').addEventListener('click', () => {
-                const form = document.getElementById('add-symbol-form');
-                form.style.display = form.style.display === 'none' ? 'block' : 'none';
-                document.getElementById('add-error').classList.remove('show');
-                document.getElementById('add-info').classList.remove('show');
-            });
-
             document.getElementById('submit-symbol').addEventListener('click', addSymbol);
 
             document.getElementById('cancel-add').addEventListener('click', () => {

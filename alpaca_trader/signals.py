@@ -1,6 +1,7 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import Optional
 
 import pandas as pd
 
@@ -21,6 +22,7 @@ class Signal:
     action: Action
     strength: float  # 0.0 to 1.0 (fraction of indicators that agree)
     details: dict  # Per-indicator signal values for logging
+    price: Optional[float] = None  # Latest close price (used for extended hours limit orders)
 
 
 def evaluate_signals(df: pd.DataFrame, symbol: str, settings: Settings) -> Signal:
@@ -84,9 +86,12 @@ def evaluate_signals(df: pd.DataFrame, symbol: str, settings: Settings) -> Signa
 
     strength = max(buy_count, sell_count) / total_enabled if total_enabled > 0 else 0.0
 
+    latest_price = float(latest["close"]) if "close" in latest.index and pd.notna(latest["close"]) else None
+
     return Signal(
         symbol=symbol,
         action=action,
         strength=strength,
         details=indicator_signals,
+        price=latest_price,
     )

@@ -101,16 +101,23 @@ class AutoTrader:
         # Use UTC and compare against ET market hours (ET = UTC-5 in winter, UTC-4 in summer)
         if settings_db.schedule_market_hours_only:
             from datetime import timezone
-            import time as time_module
             now_utc = datetime.now(timezone.utc)
-            # Market open: 9:30 AM ET = 14:30 UTC (winter) / 13:30 UTC (summer)
-            # Market close: 4:00 PM ET = 21:00 UTC (winter) / 20:00 UTC (summer)
-            # Use conservative window: 13:30-21:00 UTC covers both EST and EDT
-            market_open_utc = time(13, 30)
-            market_close_utc = time(21, 0)
             now_utc_time = now_utc.time().replace(tzinfo=None)
-            if not (market_open_utc <= now_utc_time <= market_close_utc):
-                logger.info("User %s: Outside market hours (UTC %s), skipping",
+
+            if settings_db.execution_extended_hours:
+                # Extended hours: pre-market (4 AM ET) through after-hours (8 PM ET)
+                # 4:00 AM ET = 09:00 UTC, 8:00 PM ET = 01:00 UTC (crosses midnight)
+                # Simplified: allow 09:00-23:59 UTC (covers 4 AM - 7 PM ET)
+                session_open_utc = time(9, 0)
+                session_close_utc = time(23, 59)
+            else:
+                # Regular market hours: 9:30 AM ET = 14:30 UTC (winter) / 13:30 UTC (summer)
+                # Use conservative window 13:30-21:00 UTC to cover both EST and EDT
+                session_open_utc = time(13, 30)
+                session_close_utc = time(21, 0)
+
+            if not (session_open_utc <= now_utc_time <= session_close_utc):
+                logger.info("User %s: Outside session hours (UTC %s), skipping",
                             user.username, now_utc_time.strftime("%H:%M"))
                 return
 
@@ -253,7 +260,8 @@ class AutoTrader:
                 time_in_force=settings_db.execution_time_in_force,
                 position_size_pct=settings_db.execution_position_size_pct,
                 max_positions=settings_db.execution_max_positions,
-                allow_short=settings_db.execution_allow_short
+                allow_short=settings_db.execution_allow_short,
+                extended_hours=settings_db.execution_extended_hours,
             ),
             data=DataConfig(
                 timeframe=settings_db.timeframe,

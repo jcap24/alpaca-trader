@@ -50,6 +50,7 @@ class ExecutionConfig:
     position_size_pct: float
     max_positions: int
     allow_short: bool
+    extended_hours: bool = False
 
 
 @dataclass
