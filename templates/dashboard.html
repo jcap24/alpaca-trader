@@ -94,6 +94,27 @@
             color: #f8fafc;
         }
 
+        /* P&L Summary */
+        .pl-positive { color: #10b981; }
+        .pl-negative { color: #f43f5e; }
+        .pl-neutral  { color: #94a3b8; }
+
+        .card-sub {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 6px;
+        }
+
+        .card-sub.pl-positive { color: #10b981; }
+        .card-sub.pl-negative { color: #f43f5e; }
+
+        .pl-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+            gap: 16px;
+            padding: 16px 20px;
+        }
+
         /* Charts */
         .charts-row {
             display: grid;
@@ -627,6 +648,43 @@
             <div class="card">
                 <div class="card-label">Portfolio Value</div>
                 <div class="card-value" id="portfolio-value">--</div>
+            </div>
+        </div>
+
+        <!-- P&L Summary -->
+        <div class="section" style="margin-bottom: 24px;">
+            <div class="section-header">P&amp;L Summary</div>
+            <div class="pl-cards">
+                <div class="card">
+                    <div class="card-label">Today's P&amp;L</div>
+                    <div class="card-value pl-neutral" id="pl-today-amount">--</div>
+                    <div class="card-sub" id="pl-today-pct">--</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">This Week</div>
+                    <div class="card-value pl-neutral" id="pl-week-amount">--</div>
+                    <div class="card-sub" id="pl-week-pct">--</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">This Month</div>
+                    <div class="card-value pl-neutral" id="pl-month-amount">--</div>
+                    <div class="card-sub" id="pl-month-pct">--</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Unrealized P&amp;L</div>
+                    <div class="card-value pl-neutral" id="pl-unrealized-amount">--</div>
+                    <div class="card-sub" id="pl-unrealized-positions">-- positions</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Trades Today</div>
+                    <div class="card-value pl-neutral" id="pl-trades-today">--</div>
+                    <div class="card-sub" id="pl-trades-detail">-- filled</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Best Day (30d)</div>
+                    <div class="card-value pl-neutral" id="pl-best-day">--</div>
+                    <div class="card-sub" id="pl-best-day-date">--</div>
+                </div>
             </div>
         </div>
 
@@ -1559,6 +1617,140 @@
             }
         }
 
+        // --- P&L Summary ---
+        function applyPLColor(el, value) {
+            el.classList.remove('pl-positive', 'pl-negative', 'pl-neutral');
+            if (value > 0) el.classList.add('pl-positive');
+            else if (value < 0) el.classList.add('pl-negative');
+            else el.classList.add('pl-neutral');
+        }
+
+        function fmtPL(value) {
+            if (value == null || isNaN(value)) return '--';
+            const sign = value >= 0 ? '+' : '';
+            return sign + '$' + fmt(Math.abs(value)) + (value < 0 ? '' : '');
+        }
+
+        function fmtPct(value) {
+            if (value == null || isNaN(value)) return '--';
+            const sign = value >= 0 ? '+' : '';
+            return sign + (value * 100).toFixed(2) + '%';
+        }
+
+        async function refreshPLSummary() {
+            try {
+                const today = new Date().toDateString();
+
+                const [daily, weekly, monthly, positions, orders] = await Promise.all([
+                    fetchJSON('/api/portfolio-history?period=1D&timeframe=1D').catch(() => null),
+                    fetchJSON('/api/portfolio-history?period=1W&timeframe=1D').catch(() => null),
+                    fetchJSON('/api/portfolio-history?period=1M').catch(() => null),
+                    fetchJSON('/api/positions').catch(() => []),
+                    fetchJSON('/api/orders').catch(() => []),
+                ]);
+
+                // --- Today's P&L ---
+                const todayAmt = document.getElementById('pl-today-amount');
+                const todayPct = document.getElementById('pl-today-pct');
+                if (daily && daily.profit_loss && daily.profit_loss.length) {
+                    const val = daily.profit_loss[daily.profit_loss.length - 1];
+                    const pct = daily.profit_loss_pct && daily.profit_loss_pct[daily.profit_loss_pct.length - 1];
+                    todayAmt.textContent = fmtPL(val);
+                    applyPLColor(todayAmt, val);
+                    todayPct.textContent = fmtPct(pct);
+                    todayPct.className = 'card-sub ' + (val > 0 ? 'pl-positive' : val < 0 ? 'pl-negative' : '');
+                } else {
+                    todayAmt.textContent = 'No data';
+                    todayPct.textContent = 'Market may be closed';
+                }
+
+                // --- This Week ---
+                const weekAmt = document.getElementById('pl-week-amount');
+                const weekPct = document.getElementById('pl-week-pct');
+                if (weekly && weekly.profit_loss && weekly.profit_loss.length) {
+                    const val = weekly.profit_loss[weekly.profit_loss.length - 1];
+                    const pct = weekly.profit_loss_pct && weekly.profit_loss_pct[weekly.profit_loss_pct.length - 1];
+                    weekAmt.textContent = fmtPL(val);
+                    applyPLColor(weekAmt, val);
+                    weekPct.textContent = fmtPct(pct);
+                    weekPct.className = 'card-sub ' + (val > 0 ? 'pl-positive' : val < 0 ? 'pl-negative' : '');
+                } else {
+                    weekAmt.textContent = '--';
+                    weekPct.textContent = '--';
+                }
+
+                // --- This Month ---
+                const monthAmt = document.getElementById('pl-month-amount');
+                const monthPct = document.getElementById('pl-month-pct');
+                if (monthly && monthly.profit_loss && monthly.profit_loss.length) {
+                    const val = monthly.profit_loss[monthly.profit_loss.length - 1];
+                    const pct = monthly.profit_loss_pct && monthly.profit_loss_pct[monthly.profit_loss_pct.length - 1];
+                    monthAmt.textContent = fmtPL(val);
+                    applyPLColor(monthAmt, val);
+                    monthPct.textContent = fmtPct(pct);
+                    monthPct.className = 'card-sub ' + (val > 0 ? 'pl-positive' : val < 0 ? 'pl-negative' : '');
+                } else {
+                    monthAmt.textContent = '--';
+                    monthPct.textContent = '--';
+                }
+
+                // --- Unrealized P&L (from open positions) ---
+                const unrealizedAmt = document.getElementById('pl-unrealized-amount');
+                const unrealizedPos = document.getElementById('pl-unrealized-positions');
+                if (positions.length) {
+                    const total = positions.reduce((sum, p) => sum + (p.unrealized_pl || 0), 0);
+                    unrealizedAmt.textContent = fmtPL(total);
+                    applyPLColor(unrealizedAmt, total);
+                    unrealizedPos.textContent = positions.length + ' open position' + (positions.length !== 1 ? 's' : '');
+                } else {
+                    unrealizedAmt.textContent = '$0.00';
+                    unrealizedAmt.className = 'card-value pl-neutral';
+                    unrealizedPos.textContent = 'No open positions';
+                }
+
+                // --- Trades Today ---
+                const tradesToday = document.getElementById('pl-trades-today');
+                const tradesDetail = document.getElementById('pl-trades-detail');
+                if (orders.length) {
+                    const todayOrders = orders.filter(o => {
+                        const ts = o.submitted_at || o.filled_at;
+                        return ts && new Date(ts).toDateString() === today;
+                    });
+                    const filled = todayOrders.filter(o => o.status === 'filled').length;
+                    tradesToday.textContent = todayOrders.length;
+                    tradesToday.className = 'card-value ' + (todayOrders.length > 0 ? 'pl-positive' : 'pl-neutral');
+                    tradesDetail.textContent = filled + ' filled';
+                } else {
+                    tradesToday.textContent = '0';
+                    tradesDetail.textContent = '0 filled';
+                }
+
+                // --- Best Day (30d) ---
+                const bestDayAmt = document.getElementById('pl-best-day');
+                const bestDayDate = document.getElementById('pl-best-day-date');
+                if (monthly && monthly.profit_loss && monthly.profit_loss.length > 1) {
+                    let bestVal = -Infinity;
+                    let bestIdx = -1;
+                    for (let i = 1; i < monthly.profit_loss.length; i++) {
+                        const dayChange = monthly.profit_loss[i] - monthly.profit_loss[i - 1];
+                        if (dayChange > bestVal) { bestVal = dayChange; bestIdx = i; }
+                    }
+                    bestDayAmt.textContent = bestVal > -Infinity ? fmtPL(bestVal) : '--';
+                    applyPLColor(bestDayAmt, bestVal);
+                    if (bestIdx >= 0 && monthly.timestamp && monthly.timestamp[bestIdx]) {
+                        const d = new Date(monthly.timestamp[bestIdx] * 1000);
+                        bestDayDate.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+                } else {
+                    bestDayAmt.textContent = '--';
+                    bestDayDate.textContent = 'Insufficient data';
+                }
+
+            } catch (e) {
+                console.error('P&L summary refresh failed:', e);
+            }
+        }
+
         // --- Charts ---
         let equityChart = null;
         let plChart = null;
@@ -1735,6 +1927,7 @@
         refreshWatchlist();
         refreshIndicators();
         refreshAccounts();
+        refreshPLSummary();
         refreshCharts('1M');  // default to 1M on load
 
         // --- Auto-refresh intervals ---
@@ -1745,6 +1938,7 @@
         setInterval(refreshOrders, 60000);
         setInterval(refreshWatchlist, 60000);
         setInterval(refreshAccounts, 60000);
+        setInterval(refreshPLSummary, 300000);  // every 5 min (avoids hammering history API)
     </script>
 </body>
 </html>
