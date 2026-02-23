@@ -412,13 +412,18 @@ def create_app(config=None) -> Flask:
         """Get order history."""
         try:
             client = get_user_client()
-            order_filter = GetOrdersRequest(status=QueryOrderStatus.CLOSED, limit=50)
+            order_filter = GetOrdersRequest(status=QueryOrderStatus.CLOSED, limit=50, nested=True)
             orders = client.get_orders(filter=order_filter)
 
+            seen_ids = set()
             result = []
             for o in orders:
+                oid = str(o.id)
+                if oid in seen_ids:
+                    continue
+                seen_ids.add(oid)
                 result.append({
-                    "id": str(o.id),
+                    "id": oid,
                     "symbol": o.symbol,
                     "side": o.side.value if o.side else None,
                     "qty": str(o.qty) if o.qty else None,
