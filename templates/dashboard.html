@@ -691,10 +691,10 @@
                 <span>Watchlist Management</span>
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button id="add-symbol-btn" class="btn-primary" style="float: none;" onclick="event.stopPropagation()">+ Add Symbol</button>
-                    <span class="collapse-chevron open">&#9660;</span>
+                    <span class="collapse-chevron">&#9660;</span>
                 </div>
             </div>
-            <div id="watchlist-body-wrap" class="collapsible-body" style="max-height: none;">
+            <div id="watchlist-body-wrap" class="collapsible-body" style="max-height: 0;">
                 <!-- Add Symbol Form (hidden by default) -->
                 <div id="add-symbol-form" class="form-container" style="display: none;">
                     <div class="form-row">
@@ -1646,10 +1646,24 @@
         // --- Watchlist form event listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('add-symbol-btn').addEventListener('click', () => {
-                const form = document.getElementById('add-symbol-form');
-                form.style.display = form.style.display === 'none' ? 'block' : 'none';
-                document.getElementById('add-error').classList.remove('show');
-                document.getElementById('add-info').classList.remove('show');
+                const wrap = document.getElementById('watchlist-body-wrap');
+                const header = wrap.previousElementSibling;
+                const isCollapsed = wrap.style.maxHeight === '0px' || wrap.style.maxHeight === '';
+
+                if (isCollapsed) {
+                    // Expand the section first, then show the form after animation
+                    toggleSection('watchlist-body-wrap', header);
+                    setTimeout(() => {
+                        document.getElementById('add-symbol-form').style.display = 'block';
+                        document.getElementById('add-error').classList.remove('show');
+                        document.getElementById('add-info').classList.remove('show');
+                    }, 260);
+                } else {
+                    const form = document.getElementById('add-symbol-form');
+                    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+                    document.getElementById('add-error').classList.remove('show');
+                    document.getElementById('add-info').classList.remove('show');
+                }
             });
 
             document.getElementById('submit-symbol').addEventListener('click', addSymbol);
