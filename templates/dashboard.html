@@ -691,10 +691,10 @@
                 <span>Watchlist Management</span>
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button id="add-symbol-btn" class="btn-primary" style="float: none;" onclick="event.stopPropagation()">+ Add Symbol</button>
-                    <span class="collapse-chevron open">&#9660;</span>
+                    <span class="collapse-chevron">&#9660;</span>
                 </div>
             </div>
-            <div id="watchlist-body-wrap" class="collapsible-body" style="max-height: none;">
+            <div id="watchlist-body-wrap" class="collapsible-body" style="max-height: 0;">
                 <!-- Add Symbol Form (hidden by default) -->
                 <div id="add-symbol-form" class="form-container" style="display: none;">
                     <div class="form-row">
@@ -875,7 +875,10 @@
 
         <!-- Trade History -->
         <div class="section">
-            <div class="section-header">Trade History</div>
+            <div class="section-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <span>Trade History</span>
+                <button id="orders-toggle-btn" class="btn-secondary" style="font-size: 12px; padding: 4px 10px; display: none;" onclick="toggleAllOrders()">Show All</button>
+            </div>
             <div class="table-scroll">
                 <table>
                     <thead>
@@ -1051,33 +1054,57 @@
         }
 
         // --- Orders ---
+        let allOrdersData = [];
+        let showingAllOrders = false;
+        const ORDERS_PREVIEW = 10;
+
+        function renderOrders(orders) {
+            const tbody = document.getElementById('orders-body');
+            const btn = document.getElementById('orders-toggle-btn');
+            tbody.innerHTML = '';
+            orders.forEach(o => {
+                const row = document.createElement('tr');
+                const sideClass = o.side === 'buy' ? 'side-buy' : 'side-sell';
+                const time = o.filled_at
+                    ? new Date(o.filled_at).toLocaleString()
+                    : o.submitted_at
+                        ? new Date(o.submitted_at).toLocaleString()
+                        : '--';
+                row.innerHTML = `
+                    <td>${time}</td>
+                    <td>${o.symbol}</td>
+                    <td class="${sideClass}">${(o.side || '').toUpperCase()}</td>
+                    <td>${o.qty || '--'}</td>
+                    <td>${o.filled_avg_price ? '$' + fmt(parseFloat(o.filled_avg_price)) : '--'}</td>
+                    <td>${o.status}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            if (allOrdersData.length > ORDERS_PREVIEW) {
+                btn.style.display = 'inline-block';
+                btn.textContent = showingAllOrders ? 'Show Less' : `Show All (${allOrdersData.length})`;
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        function toggleAllOrders() {
+            showingAllOrders = !showingAllOrders;
+            renderOrders(showingAllOrders ? allOrdersData : allOrdersData.slice(0, ORDERS_PREVIEW));
+        }
+
         async function refreshOrders() {
             try {
                 const data = await fetchJSON('/api/orders');
                 const tbody = document.getElementById('orders-body');
                 if (!data.length) {
                     tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No trade history</td></tr>';
+                    document.getElementById('orders-toggle-btn').style.display = 'none';
                     return;
                 }
-                tbody.innerHTML = '';
-                data.forEach(o => {
-                    const row = document.createElement('tr');
-                    const sideClass = o.side === 'buy' ? 'side-buy' : 'side-sell';
-                    const time = o.filled_at
-                        ? new Date(o.filled_at).toLocaleString()
-                        : o.submitted_at
-                            ? new Date(o.submitted_at).toLocaleString()
-                            : '--';
-                    row.innerHTML = `
-                        <td>${time}</td>
-                        <td>${o.symbol}</td>
-                        <td class="${sideClass}">${(o.side || '').toUpperCase()}</td>
-                        <td>${o.qty || '--'}</td>
-                        <td>${o.filled_avg_price ? '$' + fmt(parseFloat(o.filled_avg_price)) : '--'}</td>
-                        <td>${o.status}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
+                allOrdersData = data;
+                showingAllOrders = false;
+                renderOrders(data.slice(0, ORDERS_PREVIEW));
                 updateTimestamp();
             } catch (e) {
                 console.error('Orders refresh failed:', e);
