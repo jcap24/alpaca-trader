@@ -684,7 +684,7 @@ def create_app(config=None) -> Flask:
                 "sma": {"enabled": settings.sma_enabled, "name": "SMA Crossover"},
                 "macd": {"enabled": settings.macd_enabled, "name": "MACD"},
                 "bollinger": {"enabled": settings.bollinger_enabled, "name": "Bollinger Bands"},
-                "schedule": {"enabled": settings.schedule_enabled, "name": "Automated Trading"},
+                "schedule": {"enabled": settings.schedule_enabled, "market_hours_only": settings.schedule_market_hours_only, "name": "Automated Trading"},
                 "signal_mode": settings.signal_mode,
                 "signal_min_agree": settings.signal_min_agree,
             })
@@ -719,6 +719,11 @@ def create_app(config=None) -> Flask:
                 logger.info("User %s %s automated trading",
                            current_user.username,
                            "enabled" if settings.schedule_enabled else "disabled")
+            if "schedule_market_hours_only" in data:
+                settings.schedule_market_hours_only = bool(data["schedule_market_hours_only"])
+                logger.info("User %s set market hours only: %s",
+                           current_user.username,
+                           settings.schedule_market_hours_only)
             if "signal_mode" in data:
                 mode = str(data["signal_mode"])
                 if mode not in ("majority", "unanimous", "any"):

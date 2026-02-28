@@ -30,7 +30,7 @@ schedule:
   cron: null
   enabled: true
   interval_minutes: 5
-  market_hours_only: true
+  market_hours_only: false
 signal:
   min_agree: 2
   mode: any

@@ -793,6 +793,16 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
+                <div class="toggle-container" style="margin-bottom: 12px;">
+                    <div>
+                        <span class="toggle-label" style="font-weight: 600; color: #f1f5f9;">Market Hours Only</span>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Restrict trading to NYSE market hours (9:30 AM – 4:00 PM ET)</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-market-hours" onchange="toggleMarketHours(this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
                 <div style="display: flex; gap: 24px; flex-wrap: wrap; padding: 4px 0 12px 0; border-bottom: 1px solid #334155; margin-bottom: 12px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div>
@@ -1267,6 +1277,7 @@
                 document.getElementById('toggle-macd').checked = data.macd.enabled;
                 document.getElementById('toggle-bollinger').checked = data.bollinger.enabled;
                 document.getElementById('toggle-schedule').checked = data.schedule.enabled;
+                document.getElementById('toggle-market-hours').checked = data.schedule.market_hours_only;
 
                 // Update signal mode
                 if (data.signal_mode) {
@@ -1388,6 +1399,29 @@
                 alert('Error: ' + e.message);
                 // Revert the toggle
                 await refreshIndicators();
+            }
+        }
+
+        async function toggleMarketHours(enabled) {
+            try {
+                const resp = await fetch('/api/indicators', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schedule_market_hours_only: enabled })
+                });
+
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    alert('Failed to update setting: ' + (data.error || 'Unknown error'));
+                    await refreshIndicators(); // revert
+                    return;
+                }
+
+                console.log(`Market hours only: ${enabled}`);
+            } catch (e) {
+                console.error('Failed to toggle market hours:', e);
+                alert('Error: ' + e.message);
+                await refreshIndicators(); // revert
             }
         }
 
