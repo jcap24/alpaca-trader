@@ -3,7 +3,7 @@ data:
   timeframe: 1Day
 execution:
   allow_short: false
-  max_positions: 10
+  max_positions: 20
   order_type: market
   position_size_pct: 5.0
   time_in_force: day

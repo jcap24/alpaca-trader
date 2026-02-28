@@ -393,6 +393,49 @@ def create_app() -> Flask:
             logger.exception("Failed to activate account: %s", e)
             return jsonify({"error": str(e)}), 500
 
+    @app.route("/api/execution")
+    def get_execution():
+        """Get current execution settings."""
+        try:
+            return jsonify({
+                "max_positions": _settings.execution.max_positions,
+                "position_size_pct": _settings.execution.position_size_pct,
+            })
+        except Exception as e:
+            logger.exception("Failed to get execution settings: %s", e)
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/execution", methods=["PUT"])
+    def update_execution():
+        """Update execution settings."""
+        try:
+            data = request.get_json()
+
+            with open(_settings_path, "r") as f:
+                settings_dict = yaml.safe_load(f)
+
+            if "max_positions" in data:
+                val = int(data["max_positions"])
+                if val < 1:
+                    return jsonify({"error": "max_positions must be at least 1"}), 400
+                settings_dict["execution"]["max_positions"] = val
+
+            if "position_size_pct" in data:
+                val = float(data["position_size_pct"])
+                if val <= 0 or val > 100:
+                    return jsonify({"error": "position_size_pct must be between 0 and 100"}), 400
+                settings_dict["execution"]["position_size_pct"] = val
+
+            save_settings_to_file(_settings_path, settings_dict)
+            reload_settings(_settings_path)
+
+            logger.info("Updated execution settings: %s", data)
+            return jsonify({"success": True, "updated": data}), 200
+
+        except Exception as e:
+            logger.exception("Failed to update execution settings: %s", e)
+            return jsonify({"error": str(e)}), 500
+
     @app.route("/api/scheduler-status")
     def api_scheduler_status():
         running = _scheduler is not None and _scheduler.scheduler.running

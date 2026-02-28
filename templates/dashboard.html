@@ -793,6 +793,29 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
+                <div style="display: flex; gap: 24px; flex-wrap: wrap; padding: 4px 0 12px 0; border-bottom: 1px solid #334155; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div>
+                            <div style="font-size: 13px; font-weight: 500; color: #e2e8f0;">Max Open Positions</div>
+                            <div style="font-size: 11px; color: #64748b;">Maximum simultaneous positions per account</div>
+                        </div>
+                        <input type="number" id="max-positions-input" min="1" max="100" value="10"
+                            style="background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 6px 8px; border-radius: 6px; font-size: 14px; font-weight: 600; width: 70px; text-align: center;"
+                            onchange="updateExecutionSetting('max_positions', parseInt(this.value))">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div>
+                            <div style="font-size: 13px; font-weight: 500; color: #e2e8f0;">Position Size</div>
+                            <div style="font-size: 11px; color: #64748b;">% of portfolio per trade</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <input type="number" id="position-size-input" min="0.1" max="100" step="0.5" value="5"
+                                style="background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 6px 8px; border-radius: 6px; font-size: 14px; font-weight: 600; width: 70px; text-align: center;"
+                                onchange="updateExecutionSetting('position_size_pct', parseFloat(this.value))">
+                            <span style="font-size: 13px; color: #64748b;">%</span>
+                        </div>
+                    </div>
+                </div>
                 <div style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
                     <p style="margin: 0 0 8px 0;"><strong style="color: #e2e8f0;">How it works:</strong></p>
                     <ul style="margin: 0; padding-left: 20px;">
@@ -1294,6 +1317,38 @@
             }
         }
 
+        // --- Execution Settings ---
+        async function refreshExecutionSettings() {
+            try {
+                const data = await fetchJSON('/api/execution');
+                document.getElementById('max-positions-input').value = data.max_positions;
+                document.getElementById('position-size-input').value = data.position_size_pct;
+            } catch (e) {
+                console.error('Execution settings refresh failed:', e);
+            }
+        }
+
+        async function updateExecutionSetting(key, value) {
+            const input = document.getElementById(
+                key === 'max_positions' ? 'max-positions-input' : 'position-size-input'
+            );
+            try {
+                const resp = await fetch('/api/execution', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ [key]: value })
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    alert('Failed to update: ' + (err.error || 'Unknown error'));
+                    await refreshExecutionSettings(); // revert
+                }
+            } catch (e) {
+                alert('Network error: ' + e.message);
+                await refreshExecutionSettings(); // revert
+            }
+        }
+
         async function toggleScheduler(enabled) {
             try {
                 const confirmed = enabled
@@ -1721,6 +1776,7 @@
         refreshWatchlist();
         refreshIndicators();
         refreshAccounts();
+        refreshExecutionSettings();
         refreshCharts('1M');  // default to 1M on load
 
         // --- Auto-refresh intervals ---
