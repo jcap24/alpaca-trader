@@ -662,9 +662,9 @@
         <div class="section">
             <div class="section-header collapsible" onclick="toggleSection('signals-body-wrap', this)">
                 <span>Live Signals</span>
-                <span class="collapse-chevron open">&#9660;</span>
+                <span class="collapse-chevron">&#9660;</span>
             </div>
-            <div id="signals-body-wrap" class="collapsible-body" style="max-height: none;">
+            <div id="signals-body-wrap" class="collapsible-body" style="max-height: 0;">
                 <div class="table-scroll">
                     <table>
                         <thead>
@@ -1762,6 +1762,16 @@
         // --- Watchlist form event listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('add-symbol-btn').addEventListener('click', () => {
+                // Expand the watchlist section if it's currently collapsed
+                const body = document.getElementById('watchlist-body-wrap');
+                const isCollapsed = body.style.maxHeight === '0px' || body.style.maxHeight === '0';
+                if (isCollapsed) {
+                    const header = document.querySelector('[onclick*="watchlist-body-wrap"]');
+                    const chevron = header ? header.querySelector('.collapse-chevron') : null;
+                    body.style.maxHeight = 'none';
+                    if (chevron) chevron.classList.add('open');
+                }
+
                 const form = document.getElementById('add-symbol-form');
                 form.style.display = form.style.display === 'none' ? 'block' : 'none';
                 document.getElementById('add-error').classList.remove('show');
