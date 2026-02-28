@@ -684,7 +684,7 @@ def create_app(config=None) -> Flask:
                 "sma": {"enabled": settings.sma_enabled, "name": "SMA Crossover"},
                 "macd": {"enabled": settings.macd_enabled, "name": "MACD"},
                 "bollinger": {"enabled": settings.bollinger_enabled, "name": "Bollinger Bands"},
-                "schedule": {"enabled": settings.schedule_enabled, "name": "Automated Trading"},
+                "schedule": {"enabled": settings.schedule_enabled, "market_hours_only": settings.schedule_market_hours_only, "name": "Automated Trading"},
                 "signal_mode": settings.signal_mode,
                 "signal_min_agree": settings.signal_min_agree,
             })
@@ -719,6 +719,11 @@ def create_app(config=None) -> Flask:
                 logger.info("User %s %s automated trading",
                            current_user.username,
                            "enabled" if settings.schedule_enabled else "disabled")
+            if "schedule_market_hours_only" in data:
+                settings.schedule_market_hours_only = bool(data["schedule_market_hours_only"])
+                logger.info("User %s set market hours only: %s",
+                           current_user.username,
+                           settings.schedule_market_hours_only)
             if "signal_mode" in data:
                 mode = str(data["signal_mode"])
                 if mode not in ("majority", "unanimous", "any"):
@@ -923,6 +928,59 @@ def create_app(config=None) -> Flask:
 
         except Exception as e:
             logger.exception("Failed to activate account: %s", e)
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
+
+    # =============================================================================
+    # Execution Settings API
+    # =============================================================================
+
+    @app.route("/api/execution")
+    @login_required
+    def get_execution():
+        """Get user's execution settings."""
+        try:
+            settings = SettingsModel.query.filter_by(user_id=current_user.id).first()
+            if not settings:
+                return jsonify({"error": "Settings not found"}), 404
+            return jsonify({
+                "max_positions": settings.execution_max_positions,
+                "position_size_pct": settings.execution_position_size_pct,
+            })
+        except Exception as e:
+            logger.exception("Failed to get execution settings: %s", e)
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/execution", methods=["PUT"])
+    @login_required
+    @csrf.exempt
+    def update_execution():
+        """Update user's execution settings."""
+        try:
+            data = request.get_json()
+            settings = SettingsModel.query.filter_by(user_id=current_user.id).first()
+            if not settings:
+                return jsonify({"error": "Settings not found"}), 404
+
+            if "max_positions" in data:
+                val = int(data["max_positions"])
+                if val < 1:
+                    return jsonify({"error": "max_positions must be at least 1"}), 400
+                settings.execution_max_positions = val
+
+            if "position_size_pct" in data:
+                val = float(data["position_size_pct"])
+                if val <= 0 or val > 100:
+                    return jsonify({"error": "position_size_pct must be between 0 and 100"}), 400
+                settings.execution_position_size_pct = val
+
+            db.session.commit()
+            log_audit("execution_update", "settings", settings.id, data)
+            logger.info("User %s updated execution settings: %s", current_user.username, data)
+            return jsonify({"success": True, "updated": data}), 200
+
+        except Exception as e:
+            logger.exception("Failed to update execution settings: %s", e)
             db.session.rollback()
             return jsonify({"error": str(e)}), 500
 
