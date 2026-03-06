@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alpaca Trader Dashboard</title>
+    <title>Cappa Alpaca Trader Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -601,7 +601,7 @@
 </head>
 <body>
     <header>
-        <h1>Alpaca Trader Dashboard</h1>
+        <h1>Cappa Alpaca Trader Dashboard</h1>
         <div class="header-right">
             <span id="scheduler-badge" class="scheduler-badge scheduler-stopped">Scheduler: --</span>
             <span id="market-status" class="market-status status-closed">Market: --</span>
@@ -679,6 +679,36 @@
                         </thead>
                         <tbody id="signals-body">
                             <tr><td colspan="6" class="empty-state loading">Loading signals...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Price Analysis -->
+        <div class="section">
+            <div class="section-header collapsible" onclick="toggleSection('price-targets-body-wrap', this)">
+                <span>Price Analysis</span>
+                <span class="collapse-chevron">&#9660;</span>
+            </div>
+            <div id="price-targets-body-wrap" class="collapsible-body" style="max-height: 0;">
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Entry Price</th>
+                                <th>Current Price</th>
+                                <th>P&L %</th>
+                                <th title="Bollinger Bands upper band — price at which BB triggers a sell">BB Sell Target</th>
+                                <th title="Bollinger Bands lower band — price at which BB triggers a buy">BB Buy Zone</th>
+                                <th title="SMA long period — key support/resistance level">SMA Long</th>
+                                <th title="Current RSI value vs overbought threshold">RSI (cur / ob)</th>
+                                <th title="MACD histogram — positive is bullish, negative is bearish">MACD</th>
+                            </tr>
+                        </thead>
+                        <tbody id="price-targets-body">
+                            <tr><td colspan="9" class="empty-state loading">Loading price analysis...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1811,11 +1841,80 @@
             });
         });
 
+        // --- Price Analysis ---
+        async function refreshPriceTargets() {
+            try {
+                const data = await fetchJSON('/api/price-targets');
+                const tbody = document.getElementById('price-targets-body');
+                if (!data.length) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No data — add symbols to your watchlist.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.forEach(s => {
+                    const row = document.createElement('tr');
+
+                    const entryPrice = s.entry_price != null
+                        ? '$' + fmt(s.entry_price)
+                        : '<span style="color:#64748b">—</span>';
+
+                    const plPct = s.unrealized_pl_pct != null
+                        ? `<span class="${s.unrealized_pl_pct >= 0 ? 'positive' : 'negative'}">${s.unrealized_pl_pct >= 0 ? '+' : ''}${s.unrealized_pl_pct.toFixed(2)}%</span>`
+                        : '<span style="color:#64748b">—</span>';
+
+                    const t = s.targets;
+
+                    const bbUpper = t.bollinger?.upper != null
+                        ? '<span class="positive">$' + fmt(t.bollinger.upper) + '</span>'
+                        : '<span style="color:#64748b">—</span>';
+
+                    const bbLower = t.bollinger?.lower != null
+                        ? '<span class="negative">$' + fmt(t.bollinger.lower) + '</span>'
+                        : '<span style="color:#64748b">—</span>';
+
+                    const smaLong = t.sma?.long != null
+                        ? '$' + fmt(t.sma.long)
+                        : '<span style="color:#64748b">—</span>';
+
+                    let rsiCell = '<span style="color:#64748b">—</span>';
+                    if (t.rsi?.value != null) {
+                        const v = t.rsi.value;
+                        const color = v >= t.rsi.overbought ? '#f87171' : v <= t.rsi.oversold ? '#4ade80' : '#e2e8f0';
+                        rsiCell = `<span style="color:${color}">${v}</span> / ${t.rsi.overbought}`;
+                    }
+
+                    let macdCell = '<span style="color:#64748b">—</span>';
+                    if (t.macd?.histogram != null) {
+                        const h = t.macd.histogram;
+                        const cls = h >= 0 ? 'positive' : 'negative';
+                        macdCell = `<span class="${cls}">${h >= 0 ? '▲' : '▼'} ${Math.abs(h).toFixed(3)}</span>`;
+                    }
+
+                    row.innerHTML = `
+                        <td><strong>${s.symbol}</strong></td>
+                        <td>${entryPrice}</td>
+                        <td>${s.current_price != null ? '$' + fmt(s.current_price) : '--'}</td>
+                        <td>${plPct}</td>
+                        <td>${bbUpper}</td>
+                        <td>${bbLower}</td>
+                        <td>${smaLong}</td>
+                        <td class="details-cell">${rsiCell}</td>
+                        <td>${macdCell}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                updateTimestamp();
+            } catch (e) {
+                console.error('Price targets refresh failed:', e);
+            }
+        }
+
         // --- Initial load ---
         refreshAccount();
         refreshScheduler();
         refreshPositions();
         refreshSignals();
+        refreshPriceTargets();
         refreshOrders();
         refreshWatchlist();
         refreshIndicators();
@@ -1828,6 +1927,7 @@
         setInterval(refreshScheduler, 30000);
         setInterval(refreshPositions, 30000);
         setInterval(refreshSignals, 60000);
+        setInterval(refreshPriceTargets, 60000);
         setInterval(refreshOrders, 60000);
         setInterval(refreshWatchlist, 60000);
         setInterval(refreshAccounts, 60000);

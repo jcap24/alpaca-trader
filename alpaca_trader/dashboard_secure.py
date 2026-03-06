@@ -18,6 +18,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+import pandas as pd
 import yaml
 from flask import (
     Flask,
@@ -588,6 +589,138 @@ def create_app(config=None) -> Flask:
 
         except Exception as e:
             logger.exception("Failed to get signals: %s", e)
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/price-targets")
+    @login_required
+    def api_price_targets():
+        """Get indicator price levels and entry prices for watchlist symbols."""
+        try:
+            watchlist_entries = Watchlist.query.filter_by(user_id=current_user.id).all()
+            symbols = [entry.symbol for entry in watchlist_entries]
+
+            if not symbols:
+                return jsonify([])
+
+            settings_db = SettingsModel.query.filter_by(user_id=current_user.id).first()
+            if not settings_db:
+                return jsonify({"error": "Settings not configured"}), 400
+
+            from alpaca_trader.config import (
+                RSIConfig, SMAConfig, MACDConfig, BollingerConfig,
+                SignalConfig, ExecutionConfig, DataConfig, ScheduleConfig, Settings
+            )
+
+            settings_obj = Settings(
+                rsi=RSIConfig(
+                    enabled=settings_db.rsi_enabled,
+                    period=settings_db.rsi_period,
+                    overbought=settings_db.rsi_overbought,
+                    oversold=settings_db.rsi_oversold
+                ),
+                sma=SMAConfig(
+                    enabled=settings_db.sma_enabled,
+                    short_period=settings_db.sma_short_period,
+                    long_period=settings_db.sma_long_period
+                ),
+                macd=MACDConfig(
+                    enabled=settings_db.macd_enabled,
+                    fast_period=settings_db.macd_fast_period,
+                    slow_period=settings_db.macd_slow_period,
+                    signal_period=settings_db.macd_signal_period
+                ),
+                bollinger=BollingerConfig(
+                    enabled=settings_db.bollinger_enabled,
+                    period=settings_db.bollinger_period,
+                    std_dev=settings_db.bollinger_std_dev
+                ),
+                signal=SignalConfig(
+                    mode=settings_db.signal_mode,
+                    min_agree=settings_db.signal_min_agree
+                ),
+                execution=ExecutionConfig(
+                    order_type=settings_db.execution_order_type,
+                    time_in_force=settings_db.execution_time_in_force,
+                    position_size_pct=settings_db.execution_position_size_pct,
+                    max_positions=settings_db.execution_max_positions,
+                    allow_short=settings_db.execution_allow_short
+                ),
+                data=DataConfig(
+                    timeframe=settings_db.timeframe,
+                    lookback_days=settings_db.lookback_days
+                ),
+                schedule=ScheduleConfig(
+                    enabled=settings_db.schedule_enabled,
+                    interval_minutes=settings_db.schedule_interval_minutes,
+                    cron=settings_db.schedule_cron,
+                    market_hours_only=settings_db.schedule_market_hours_only
+                )
+            )
+
+            client = get_user_client()
+
+            # Build a map of symbol -> position for entry price lookup
+            raw_positions = client.get_positions()
+            position_map = {p.symbol: p for p in raw_positions}
+
+            bars = fetch_bars(client, symbols, settings_obj.data.timeframe, settings_obj.data.lookback_days)
+
+            results = []
+            for symbol, df in bars.items():
+                df = compute_all(df, settings_obj)
+                last = df.iloc[-1] if not df.empty else None
+
+                pos = position_map.get(symbol)
+                entry_price = round(float(pos.avg_entry_price), 2) if pos else None
+                unrealized_pl_pct = round(float(pos.unrealized_plpc) * 100, 2) if pos else None
+                current_price = round(float(last["close"]), 2) if last is not None else None
+
+                targets = {}
+
+                if settings_obj.rsi.enabled and last is not None:
+                    rsi_val = last.get("rsi")
+                    targets["rsi"] = {
+                        "value": round(float(rsi_val), 1) if pd.notna(rsi_val) else None,
+                        "overbought": settings_obj.rsi.overbought,
+                        "oversold": settings_obj.rsi.oversold,
+                    }
+
+                if settings_obj.sma.enabled and last is not None:
+                    sma_short = last.get("sma_short")
+                    sma_long = last.get("sma_long")
+                    targets["sma"] = {
+                        "short": round(float(sma_short), 2) if pd.notna(sma_short) else None,
+                        "long": round(float(sma_long), 2) if pd.notna(sma_long) else None,
+                    }
+
+                if settings_obj.macd.enabled and last is not None:
+                    histogram = last.get("macd_histogram")
+                    targets["macd"] = {
+                        "histogram": round(float(histogram), 4) if pd.notna(histogram) else None,
+                    }
+
+                if settings_obj.bollinger.enabled and last is not None:
+                    bb_upper = last.get("bb_upper")
+                    bb_lower = last.get("bb_lower")
+                    bb_middle = last.get("bb_middle")
+                    targets["bollinger"] = {
+                        "upper": round(float(bb_upper), 2) if pd.notna(bb_upper) else None,
+                        "lower": round(float(bb_lower), 2) if pd.notna(bb_lower) else None,
+                        "middle": round(float(bb_middle), 2) if pd.notna(bb_middle) else None,
+                    }
+
+                results.append({
+                    "symbol": symbol,
+                    "current_price": current_price,
+                    "entry_price": entry_price,
+                    "unrealized_pl_pct": unrealized_pl_pct,
+                    "targets": targets,
+                })
+
+            return jsonify(results)
+
+        except Exception as e:
+            logger.exception("Failed to get price targets: %s", e)
             return jsonify({"error": str(e)}), 500
 
     # =============================================================================
