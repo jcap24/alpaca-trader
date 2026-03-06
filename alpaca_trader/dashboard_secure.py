@@ -66,6 +66,9 @@ _auto_trader = None  # AutoTrader instance for background scheduling
 
 def create_app(config=None) -> Flask:
     """Create and configure the secure Flask application."""
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    setup_logger(level=log_level)
+
     app = Flask(
         __name__,
         template_folder=str(Path(__file__).parent.parent / "templates"),
