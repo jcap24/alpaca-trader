@@ -1278,7 +1278,7 @@
             }
 
             try {
-                const resp = await fetch(`/api/watchlist/${symbol}`, {
+                const resp = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, {
                     method: 'DELETE'
                 });
 
