@@ -1,9 +1,14 @@
 import logging
 
 from alpaca.trading.client import TradingClient
-from alpaca.data.historical import StockHistoricalDataClient
+from alpaca.data.historical import StockHistoricalDataClient, CryptoHistoricalDataClient
 
 logger = logging.getLogger("alpaca_trader")
+
+
+def is_crypto_symbol(symbol: str) -> bool:
+    """Return True if symbol is a crypto pair (e.g. BTC/USD, ETH/USD)."""
+    return "/" in symbol
 
 
 class AlpacaClient:
@@ -12,6 +17,7 @@ class AlpacaClient:
     def __init__(self, api_key: str, secret_key: str, paper: bool = True):
         self.trading = TradingClient(api_key, secret_key, paper=paper)
         self.data = StockHistoricalDataClient(api_key, secret_key)
+        self.crypto_data = CryptoHistoricalDataClient(api_key, secret_key)
         logger.info("Alpaca client initialized (paper=%s)", paper)
 
     def get_account(self):

@@ -15,6 +15,7 @@ This is an enhanced version of dashboard.py with:
 import json
 import logging
 import os
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -42,7 +43,7 @@ from alpaca.trading.requests import GetOrdersRequest
 
 from alpaca_trader.auth import admin_required, log_audit, login_manager, update_last_login
 from alpaca_trader.auto_trader import AutoTrader
-from alpaca_trader.client import AlpacaClient
+from alpaca_trader.client import AlpacaClient, is_crypto_symbol
 from alpaca_trader.config import Settings
 from alpaca_trader.data import fetch_bars
 from alpaca_trader.indicators import compute_all
@@ -57,6 +58,22 @@ logger = logging.getLogger("alpaca_trader")
 
 # Global encryption manager (initialized in start_dashboard)
 _encryption_manager: EncryptionManager = None
+
+# Short-lived cache for bar data — shared between /api/signals and /api/price-targets
+# so both routes on the same 60s refresh cycle share one fetch_bars() call.
+_bars_cache: dict = {}  # {user_id: {"ts": float, "bars": dict}}
+_BARS_CACHE_TTL = 55    # seconds — slightly under the 60s frontend poll interval
+
+
+def _get_cached_bars(user_id: int, client, symbols: list, settings_obj) -> dict:
+    """Return cached bars if fresh, otherwise fetch and cache."""
+    now = time.time()
+    cached = _bars_cache.get(user_id)
+    if cached and (now - cached["ts"]) < _BARS_CACHE_TTL:
+        return cached["bars"]
+    bars = fetch_bars(client, symbols, settings_obj.data.timeframe, settings_obj.data.lookback_days)
+    _bars_cache[user_id] = {"ts": now, "bars": bars}
+    return bars
 
 # Module-level references for backward compatibility
 _client: AlpacaClient = None
@@ -560,9 +577,9 @@ def create_app(config=None) -> Flask:
                 )
             )
 
-            # Fetch bars and compute signals
+            # Fetch bars and compute signals (cached to avoid duplicate fetches with /api/price-targets)
             client = get_user_client()
-            bars = fetch_bars(client, symbols, settings_obj.data.timeframe, settings_obj.data.lookback_days)
+            bars = _get_cached_bars(current_user.id, client, symbols, settings_obj)
 
             results = []
             for symbol, df in bars.items():
@@ -663,7 +680,7 @@ def create_app(config=None) -> Flask:
             raw_positions = client.get_positions()
             position_map = {p.symbol: p for p in raw_positions}
 
-            bars = fetch_bars(client, symbols, settings_obj.data.timeframe, settings_obj.data.lookback_days)
+            bars = _get_cached_bars(current_user.id, client, symbols, settings_obj)
 
             results = []
             for symbol, df in bars.items():
@@ -744,9 +761,12 @@ def create_app(config=None) -> Flask:
             data = request.get_json()
             symbol = data.get("symbol", "").strip().upper()
 
-            # Validate symbol format
-            if not symbol or not symbol.isalpha() or len(symbol) > 5:
-                return jsonify({"error": "Symbol must be 1-5 letters"}), 400
+            # Validate symbol format: stock ticker (AAPL) or crypto pair (BTC/USD)
+            import re
+            valid_stock = re.match(r'^[A-Z]{1,5}$', symbol)
+            valid_crypto = re.match(r'^[A-Z]{2,10}/[A-Z]{2,5}$', symbol)
+            if not symbol or (not valid_stock and not valid_crypto):
+                return jsonify({"error": "Enter a stock ticker (e.g. AAPL) or crypto pair (e.g. BTC/USD)"}), 400
 
             # Check for duplicates
             existing = Watchlist.query.filter_by(user_id=current_user.id, symbol=symbol).first()
@@ -754,13 +774,15 @@ def create_app(config=None) -> Flask:
                 return jsonify({"error": f"Symbol {symbol} already in watchlist"}), 409
 
             # Validate with Alpaca API
+            # Crypto pairs (BTC/USD) are not in the asset endpoint — skip lookup and use symbol as name
             client = get_user_client()
-            asset = client.get_asset(symbol)
-            if asset is None:
-                return jsonify({"error": f"Symbol {symbol} not found. Please verify it's a valid ticker."}), 404
-
-            # Get company name
-            name = asset.name if hasattr(asset, 'name') and asset.name else symbol
+            if is_crypto_symbol(symbol):
+                name = symbol
+            else:
+                asset = client.get_asset(symbol)
+                if asset is None:
+                    return jsonify({"error": f"Symbol {symbol} not found. Please verify it's a valid ticker."}), 404
+                name = asset.name if hasattr(asset, 'name') and asset.name else symbol
 
             # Add to watchlist
             entry = Watchlist(user_id=current_user.id, symbol=symbol, name=name)

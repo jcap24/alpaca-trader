@@ -12,7 +12,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
-from alpaca_trader.client import AlpacaClient
+from alpaca_trader.client import AlpacaClient, is_crypto_symbol
 from alpaca_trader.config import (
     RSIConfig, SMAConfig, MACDConfig, BollingerConfig,
     SignalConfig, ExecutionConfig, DataConfig, ScheduleConfig, Settings
@@ -97,22 +97,22 @@ class AutoTrader:
             logger.warning("User %s has no settings, skipping", user.username)
             return
 
-        # Check if it's within scheduled time (market hours only check)
-        # Use UTC and compare against ET market hours (ET = UTC-5 in winter, UTC-4 in summer)
+        # Compute market hours status once — applied per-symbol inside the loop.
+        # Crypto symbols are always tradeable 24/7 and bypass this check.
+        is_market_hours = True
         if settings_db.schedule_market_hours_only:
             from datetime import timezone
-            import time as time_module
             now_utc = datetime.now(timezone.utc)
             # Market open: 9:30 AM ET = 14:30 UTC (winter) / 13:30 UTC (summer)
             # Market close: 4:00 PM ET = 21:00 UTC (winter) / 20:00 UTC (summer)
-            # Use conservative window: 13:30-21:00 UTC covers both EST and EDT
+            # Conservative window: 13:30-21:00 UTC covers both EST and EDT
             market_open_utc = time(13, 30)
             market_close_utc = time(21, 0)
             now_utc_time = now_utc.time().replace(tzinfo=None)
-            if not (market_open_utc <= now_utc_time <= market_close_utc):
-                logger.info("User %s: Outside market hours (UTC %s), skipping",
+            is_market_hours = market_open_utc <= now_utc_time <= market_close_utc
+            if not is_market_hours:
+                logger.info("User %s: Outside market hours (UTC %s) — crypto symbols will still run",
                             user.username, now_utc_time.strftime("%H:%M"))
-                return
 
         # Get user's active account
         active_account = Account.query.filter_by(user_id=user.id, is_active=True).first()
@@ -147,6 +147,11 @@ class AutoTrader:
 
         for symbol, df in bars.items():
             try:
+                # Crypto trades 24/7 — only apply market hours gate to stocks
+                if not is_market_hours and not is_crypto_symbol(symbol):
+                    logger.info("Skipping %s: outside market hours", symbol)
+                    continue
+
                 # Compute indicators and evaluate signal
                 df = compute_all(df, settings)
                 signal = evaluate_signals(df, symbol, settings)

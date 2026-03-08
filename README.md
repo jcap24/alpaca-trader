@@ -1,6 +1,6 @@
 # Alpaca Trader
 
-A Python-based automated stock trading bot that uses technical indicators to generate buy/sell signals and execute trades through the [Alpaca API](https://alpaca.markets/). Designed for paper trading with support for backtesting, scheduled trading, and a web-based dashboard.
+A Python-based automated trading bot that uses technical indicators to generate buy/sell signals and execute trades through the [Alpaca API](https://alpaca.markets/). Supports both **stocks and crypto**, with a secure multi-user web dashboard, automated background scheduling, and a CLI for power users.
 
 ## Features
 
@@ -20,8 +20,15 @@ A Python-based automated stock trading bot that uses technical indicators to gen
   - **Trade**: Execute trades based on signals
   - **Schedule**: Automated trading on a timer
   - **Backtest**: Historical signal analysis
-  - **Dashboard**: Web UI for monitoring and control
+  - **Dashboard**: Basic web UI for monitoring and control
+  - **Dashboard-Secure**: Production-ready web UI with authentication
   - **Status**: Account and portfolio summary
+
+- **Stocks and Crypto**
+  - Stocks routed to Alpaca's stock data and trading APIs
+  - Crypto pairs (e.g. `BTC/USD`) routed to crypto APIs automatically
+  - Crypto trading bypasses market-hours check (24/7)
+  - Crypto uses GTC time-in-force (DAY not supported by Alpaca for crypto)
 
 - **Risk Management**
   - Configurable position sizing (percentage of portfolio)
@@ -29,11 +36,14 @@ A Python-based automated stock trading bot that uses technical indicators to gen
   - Dry-run mode for testing
   - Paper trading support
 
-- **Web Dashboard**
+- **Secure Web Dashboard**
+  - Multi-user authentication with role-based access (admin/viewer)
+  - Optional two-factor authentication (TOTP)
+  - Encrypted API key storage per user
+  - Password reset via email
   - Real-time portfolio monitoring
-  - Signal visualization
-  - Position tracking
-  - Trade history
+  - Signal visualization and price analysis panel
+  - Position tracking and trade history
 
 ## Installation
 
@@ -192,9 +202,9 @@ Backtest a specific symbol:
 python -m alpaca_trader.main backtest --days 30 --symbol AAPL
 ```
 
-#### Web Dashboard
+#### Web Dashboard (Basic)
 
-Start the web interface:
+Start the basic web interface:
 ```bash
 python -m alpaca_trader.main dashboard
 ```
@@ -208,6 +218,33 @@ Dashboard without scheduler:
 ```bash
 python -m alpaca_trader.main dashboard --no-scheduler
 ```
+
+#### Web Dashboard (Secure — Recommended for Production)
+
+The secure dashboard adds multi-user authentication, 2FA, encrypted API key storage, password reset via email, and a price analysis panel. This is the version deployed on Render.
+
+Required environment variables:
+```env
+ENCRYPTION_KEY=<fernet-key>        # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+SECRET_KEY=<flask-secret>          # Any long random string
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=<initial-password>
+```
+
+Start the secure dashboard:
+```bash
+python -m alpaca_trader.main dashboard-secure
+```
+
+With custom host/port:
+```bash
+python -m alpaca_trader.main dashboard-secure --host 0.0.0.0 --port 8080
+```
+
+The admin account is created automatically on first run if no users exist. Log in at `http://localhost:8000` and add your Alpaca API credentials through the Settings page.
+
+> **Note**: `ENCRYPTION_KEY` must never change after users have saved their API keys — changing it will make all stored keys unreadable.
 
 ### Logging
 
@@ -387,25 +424,34 @@ strength = 3 / 4 = 0.75 (75%)
 alpaca-trader/
 ├── alpaca_trader/
 │   ├── __init__.py
-│   ├── client.py       # Alpaca API client wrapper
-│   ├── config.py       # Configuration loading
-│   ├── dashboard.py    # Flask web dashboard
-│   ├── data.py         # Market data fetching
-│   ├── executor.py     # Order execution logic
-│   ├── indicators.py   # Technical indicator calculations
-│   ├── logger.py       # Logging setup
-│   ├── main.py         # CLI entry point
-│   ├── portfolio.py    # Portfolio management
-│   ├── scheduler.py    # Trading scheduler
-│   └── signals.py      # Signal evaluation logic
+│   ├── auto_trader.py        # Per-user trading logic (called by scheduler)
+│   ├── client.py             # Alpaca API client wrapper (stocks + crypto)
+│   ├── config.py             # Configuration loading (YAML + DB settings)
+│   ├── dashboard.py          # Basic Flask dashboard (CLI only)
+│   ├── dashboard_secure.py   # Production Flask app with auth (Render)
+│   ├── data.py               # Market data fetching (stocks + crypto)
+│   ├── executor.py           # Order execution logic with safety guards
+│   ├── indicators.py         # Technical indicator calculations
+│   ├── logger.py             # Logging setup
+│   ├── main.py               # CLI entry point
+│   ├── models.py             # SQLAlchemy models (User, UserSettings, etc.)
+│   ├── portfolio.py          # Portfolio management
+│   ├── scheduler.py          # APScheduler background trading scheduler
+│   ├── security.py           # Fernet encryption for API keys, password hashing
+│   └── signals.py            # Signal aggregation logic
 ├── config/
-│   ├── settings.yaml   # Trading configuration
-│   └── watchlist.yaml  # Stock watchlist
-├── templates/          # Dashboard HTML templates
-├── tests/             # Test suite
-├── .env.example       # Environment variables template
+│   ├── settings.yaml         # Default trading configuration
+│   └── watchlist.yaml        # Default stock/crypto watchlist
+├── scripts/
+│   └── auto_init.py          # DB init + admin user creation (Render release cmd)
+├── templates/                # Jinja2 HTML templates for the dashboard
+├── tests/                    # Test suite
+├── wsgi.py                   # Gunicorn entry point (imports dashboard_secure)
+├── Procfile                  # Render process definitions
+├── .env.example              # Environment variables template
 ├── .gitignore
 ├── requirements.txt
+├── DEVELOPER.md              # Architecture guide for contributors
 └── README.md
 ```
 
@@ -432,8 +478,15 @@ Key dependencies include:
 - `pandas` - Data manipulation
 - `ta` - Technical analysis library
 - `flask` - Web dashboard
+- `flask-login` - Session-based authentication
+- `flask-sqlalchemy` - Database ORM
+- `flask-wtf` - CSRF protection
+- `flask-mail` - Password reset emails
+- `cryptography` - Fernet encryption for stored API keys
 - `apscheduler` - Job scheduling
 - `pyyaml` - Configuration files
+- `pyotp` - TOTP two-factor authentication
+- `gunicorn` - WSGI server for production
 
 ## Warning
 
