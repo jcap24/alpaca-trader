@@ -4,7 +4,7 @@ from typing import Optional
 from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
 
-from alpaca_trader.client import AlpacaClient
+from alpaca_trader.client import AlpacaClient, is_crypto_symbol
 from alpaca_trader.config import Settings
 from alpaca_trader.signals import Action, Signal
 
@@ -34,6 +34,7 @@ class OrderExecutor:
         if signal.action == Action.HOLD:
             return None
 
+        crypto = is_crypto_symbol(signal.symbol)
         account = self.client.get_account()
         equity = float(account.equity)
         positions = self.client.get_positions()
@@ -56,6 +57,9 @@ class OrderExecutor:
 
         # --- Guard: nothing to sell ---
         if signal.action == Action.SELL and existing_position is None:
+            if crypto:
+                logger.info("Skipping SELL %s: crypto short selling not supported", signal.symbol)
+                return None
             if not self.settings.execution.allow_short:
                 logger.info(
                     "Skipping SELL %s: no position and shorting disabled",
@@ -64,7 +68,12 @@ class OrderExecutor:
                 return None
 
         # --- Calculate order parameters ---
-        tif = TIME_IN_FORCE_MAP[self.settings.execution.time_in_force]
+        # Crypto only supports GTC and IOC — never DAY
+        if crypto and self.settings.execution.time_in_force == "day":
+            tif = TimeInForce.GTC
+            logger.debug("%s: forcing GTC time-in-force (crypto does not support DAY)", signal.symbol)
+        else:
+            tif = TIME_IN_FORCE_MAP[self.settings.execution.time_in_force]
 
         if signal.action == Action.BUY:
             notional = round(
