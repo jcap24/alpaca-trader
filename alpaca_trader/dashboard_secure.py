@@ -799,13 +799,13 @@ def create_app(config=None) -> Flask:
             db.session.rollback()
             return jsonify({"error": str(e)}), 500
 
-    @app.route("/api/watchlist/<symbol>", methods=["DELETE"])
+    @app.route("/api/watchlist", methods=["DELETE"])
     @login_required
     @csrf.exempt
-    def remove_watchlist_symbol(symbol: str):
+    def remove_watchlist_symbol():
         """Remove a symbol from user's watchlist."""
         try:
-            symbol = symbol.upper()
+            symbol = request.args.get("symbol", "").strip().upper()
             entry = Watchlist.query.filter_by(user_id=current_user.id, symbol=symbol).first()
 
             if not entry:
