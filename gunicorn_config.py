@@ -14,7 +14,7 @@ workers = int(os.getenv("GUNICORN_WORKERS", "1"))
 worker_class = "gthread"   # Thread-based: cheaper than forking new processes
 threads = int(os.getenv("GUNICORN_THREADS", "2"))  # 2 threads handles concurrent requests
 worker_connections = 1000
-timeout = 60  # Longer timeout since data fetching can be slow
+timeout = 120  # Allow up to 2 min for slow Alpaca API responses on Render
 keepalive = 2
 
 # Process naming
