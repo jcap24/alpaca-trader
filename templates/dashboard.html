@@ -4,97 +4,170 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cappa Alpaca Trader Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <style>
+        :root {
+            --bg:         #080f1e;
+            --surface:    #0d1829;
+            --surface-2:  #111f35;
+            --border:     #1a2d47;
+            --border-2:   #243650;
+            --text:       #dde6f0;
+            --text-muted: #5a7494;
+            --text-dim:   #8ba3bd;
+            --accent:     #3b82f6;
+            --accent-glow:rgba(59,130,246,0.18);
+            --green:      #22d37a;
+            --green-dim:  rgba(34,211,122,0.12);
+            --red:        #f4605a;
+            --red-dim:    rgba(244,96,90,0.12);
+            --gold:       #f59e0b;
+            --radius:     14px;
+            --radius-sm:  8px;
+            --shadow:     0 4px 24px rgba(0,0,0,0.45);
+            --shadow-sm:  0 2px 10px rgba(0,0,0,0.3);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.5;
         }
 
+        /* ── Header ── */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 24px;
-            background: #1e293b;
-            border-bottom: 1px solid #334155;
+            padding: 0 28px;
+            height: 60px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-logo-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
         }
 
         header h1 {
-            font-size: 20px;
-            font-weight: 600;
-            color: #f8fafc;
+            font-size: 16px;
+            font-weight: 700;
+            color: #f0f6ff;
+            letter-spacing: -0.01em;
         }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 16px;
-            font-size: 13px;
+            gap: 12px;
+            font-size: 12px;
         }
 
-        .market-status {
+        .market-status, .scheduler-badge {
             padding: 4px 12px;
-            border-radius: 12px;
+            border-radius: 20px;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
-        .status-open { background: #065f46; color: #6ee7b7; }
-        .status-closed { background: #7f1d1d; color: #fca5a5; }
+        .status-open  { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,211,122,0.25); }
+        .status-closed { background: var(--red-dim); color: var(--red); border: 1px solid rgba(244,96,90,0.25); }
+        .scheduler-running { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+        .scheduler-stopped { background: rgba(90,116,148,0.12); color: var(--text-muted); border: 1px solid var(--border); }
 
-        .scheduler-badge {
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .scheduler-running { background: #1e3a5f; color: #93c5fd; }
-        .scheduler-stopped { background: #3f3f46; color: #a1a1aa; }
-
+        /* ── Layout ── */
         .container {
-            max-width: 1400px;
+            max-width: 1440px;
             margin: 0 auto;
-            padding: 24px;
+            padding: 28px 24px;
         }
 
-        /* Account Cards */
+        /* ── Account Cards ── */
         .cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
             gap: 16px;
             margin-bottom: 24px;
         }
 
         .card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px 24px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            border-color: var(--border-2);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 3px; height: 100%;
+            background: linear-gradient(180deg, var(--accent), #6366f1);
+            border-radius: 3px 0 0 3px;
+            opacity: 0.7;
         }
 
         .card-label {
-            font-size: 12px;
-            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 8px;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
         }
 
         .card-value {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 700;
             font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
-            color: #f8fafc;
+            color: #f0f6ff;
+            letter-spacing: -0.02em;
         }
 
-        /* Charts */
+        /* ── Charts ── */
         .charts-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -103,119 +176,132 @@
         }
 
         .chart-container {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px 24px;
         }
 
         .chart-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
 
         .chart-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
-            color: #cbd5e1;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        .period-buttons {
-            display: flex;
-            gap: 4px;
-        }
+        .period-buttons { display: flex; gap: 4px; }
 
         .period-btn {
-            background: #334155;
-            border: none;
-            color: #94a3b8;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
             padding: 4px 10px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.15s;
         }
 
-        .period-btn:hover { background: #475569; color: #e2e8f0; }
-        .period-btn.active { background: #2563eb; color: #fff; }
+        .period-btn:hover { background: var(--surface-2); color: var(--text-dim); border-color: var(--border-2); }
+        .period-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
 
-        .chart-wrap {
-            position: relative;
-            height: 250px;
-        }
+        .chart-wrap { position: relative; height: 250px; }
 
-        /* Tables */
+        /* ── Sections ── */
         .section {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            margin-bottom: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 20px;
             overflow: hidden;
+            box-shadow: var(--shadow-sm);
         }
 
         .section-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid #334155;
-            font-size: 14px;
+            padding: 15px 22px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
             font-weight: 600;
-            color: #cbd5e1;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            padding: 10px 16px;
-            text-align: left;
-            font-size: 11px;
-            font-weight: 600;
-            color: #64748b;
+            color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            border-bottom: 1px solid #334155;
+            background: var(--surface-2);
+        }
+
+        /* ── Tables ── */
+        table { width: 100%; border-collapse: collapse; }
+
+        th {
+            padding: 10px 18px;
+            text-align: left;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-2);
         }
 
         td {
-            padding: 12px 16px;
+            padding: 12px 18px;
             font-size: 13px;
-            border-bottom: 1px solid #1e293b;
+            border-bottom: 1px solid var(--border);
             font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+            transition: background 0.1s;
         }
 
-        tr:hover { background: #253348; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(59,130,246,0.04); }
 
-        .positive { color: #4ade80; }
-        .negative { color: #f87171; }
+        .positive { color: var(--green); }
+        .negative { color: var(--red); }
 
-        .signal-buy { background: rgba(34, 197, 94, 0.08); }
-        .signal-sell { background: rgba(239, 68, 68, 0.08); }
+        .signal-buy td { background: rgba(34,211,122,0.04); }
+        .signal-sell td { background: rgba(244,96,90,0.04); }
+        .signal-buy:hover td { background: rgba(34,211,122,0.08); }
+        .signal-sell:hover td { background: rgba(244,96,90,0.08); }
 
+        /* ── Badges ── */
         .badge {
             display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
+            padding: 2px 9px;
+            border-radius: 5px;
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-family: 'Inter', sans-serif;
         }
 
-        .badge-buy { background: #065f46; color: #6ee7b7; }
-        .badge-sell { background: #7f1d1d; color: #fca5a5; }
-        .badge-hold { background: #3f3f46; color: #a1a1aa; }
+        .badge-buy  { background: rgba(34,211,122,0.15); color: var(--green); border: 1px solid rgba(34,211,122,0.3); }
+        .badge-sell { background: rgba(244,96,90,0.15);  color: var(--red);   border: 1px solid rgba(244,96,90,0.3); }
+        .badge-hold { background: rgba(90,116,148,0.15); color: var(--text-dim); border: 1px solid var(--border); }
 
-        .side-buy { color: #4ade80; }
-        .side-sell { color: #f87171; }
+        .badge-active   { background: rgba(34,211,122,0.15); color: var(--green); border: 1px solid rgba(34,211,122,0.3); }
+        .badge-inactive { background: rgba(90,116,148,0.12); color: var(--text-muted); border: 1px solid var(--border); }
+        .badge-paper    { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+        .badge-live     { background: rgba(245,158,11,0.12); color: var(--gold); border: 1px solid rgba(245,158,11,0.3); }
 
+        .side-buy  { color: var(--green); font-weight: 600; }
+        .side-sell { color: var(--red);   font-weight: 600; }
+
+        /* ── Strength bar ── */
         .strength-bar {
             display: inline-block;
-            height: 6px;
+            height: 5px;
             border-radius: 3px;
-            background: #334155;
-            width: 60px;
+            background: var(--border-2);
+            width: 56px;
             vertical-align: middle;
             margin-right: 6px;
         }
@@ -223,135 +309,174 @@
         .strength-fill {
             height: 100%;
             border-radius: 3px;
-            background: #3b82f6;
+            background: linear-gradient(90deg, var(--accent), #6366f1);
         }
 
-        .details-cell {
-            font-size: 11px;
-            color: #94a3b8;
-        }
+        .details-cell { font-size: 11px; color: var(--text-muted); }
 
         .empty-state {
-            padding: 40px 20px;
+            padding: 44px 20px;
             text-align: center;
-            color: #64748b;
+            color: var(--text-muted);
             font-size: 13px;
+            font-family: 'Inter', sans-serif;
         }
 
-        /* Collapsible Sections */
+        /* ── Collapsible ── */
         .section-header.collapsible {
             cursor: pointer;
             user-select: none;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            transition: background 0.15s;
         }
 
-        .section-header.collapsible:hover {
-            background: #253348;
-        }
+        .section-header.collapsible:hover { background: #162033; }
 
         .collapse-chevron {
-            font-size: 10px;
-            color: #64748b;
-            transition: transform 0.2s ease;
+            font-size: 9px;
+            color: var(--text-muted);
+            transition: transform 0.22s ease;
             flex-shrink: 0;
         }
 
-        .collapse-chevron.open {
-            transform: rotate(180deg);
-        }
+        .collapse-chevron.open { transform: rotate(180deg); }
 
         .collapsible-body {
             overflow: hidden;
-            transition: max-height 0.25s ease;
+            transition: max-height 0.28s ease;
         }
 
+        /* ── Footer ── */
         footer {
             text-align: center;
-            padding: 16px;
-            color: #475569;
-            font-size: 12px;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 11px;
+            border-top: 1px solid var(--border);
+            margin-top: 8px;
         }
 
-        .loading {
-            color: #64748b;
-            font-style: italic;
-        }
+        .loading { color: var(--text-muted); font-style: italic; }
 
+        /* ── Buttons ── */
         .btn-logout {
             background: transparent;
-            color: #94a3b8;
-            border: 1px solid #475569;
-            padding: 5px 12px;
-            border-radius: 6px;
+            color: var(--text-dim);
+            border: 1px solid var(--border-2);
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 12px;
             font-weight: 500;
             text-decoration: none;
             display: inline-block;
+            transition: all 0.15s;
         }
 
         .btn-logout:hover {
-            background: #7f1d1d;
-            color: #fca5a5;
-            border-color: #7f1d1d;
+            background: var(--red-dim);
+            color: var(--red);
+            border-color: rgba(244,96,90,0.3);
         }
 
         .btn-primary {
-            background: #2563eb;
+            background: var(--accent);
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
+            padding: 7px 14px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 12px;
             font-weight: 600;
             float: right;
+            transition: all 0.15s;
+            box-shadow: 0 0 0 0 var(--accent-glow);
         }
 
-        .btn-primary:hover { background: #1d4ed8; }
+        .btn-primary:hover {
+            background: #2563eb;
+            box-shadow: 0 0 14px var(--accent-glow);
+        }
 
         .btn-success {
             background: #059669;
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
+            padding: 7px 14px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 12px;
+            font-weight: 600;
+            transition: background 0.15s;
         }
 
         .btn-success:hover { background: #047857; }
 
         .btn-secondary {
-            background: #6b7280;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
+            background: var(--surface-2);
+            color: var(--text-dim);
+            border: 1px solid var(--border-2);
+            padding: 7px 14px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s;
         }
 
-        .btn-secondary:hover { background: #4b5563; }
+        .btn-secondary:hover { background: var(--border); color: var(--text); }
 
         .btn-danger {
-            background: #dc2626;
-            color: white;
-            border: none;
+            background: transparent;
+            color: var(--red);
+            border: 1px solid rgba(244,96,90,0.35);
             padding: 4px 10px;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 11px;
             font-weight: 600;
+            transition: all 0.15s;
         }
 
-        .btn-danger:hover { background: #b91c1c; }
+        .btn-danger:hover { background: var(--red-dim); border-color: rgba(244,96,90,0.6); }
 
+        .btn-activate {
+            background: transparent;
+            color: var(--green);
+            border: 1px solid rgba(34,211,122,0.35);
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 4px;
+            transition: all 0.15s;
+        }
+
+        .btn-activate:hover { background: var(--green-dim); border-color: rgba(34,211,122,0.6); }
+
+        .btn-edit {
+            background: transparent;
+            color: #60a5fa;
+            border: 1px solid rgba(59,130,246,0.3);
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 4px;
+            transition: all 0.15s;
+        }
+
+        .btn-edit:hover { background: var(--accent-glow); border-color: rgba(59,130,246,0.5); }
+
+        /* ── Forms ── */
         .form-container {
-            padding: 16px 20px;
-            border-bottom: 1px solid #334155;
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-2);
         }
 
         .form-row {
@@ -361,30 +486,31 @@
         }
 
         .form-row input {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #e2e8f0;
+            background: var(--bg);
+            border: 1px solid var(--border-2);
+            color: var(--text);
             padding: 8px 12px;
-            border-radius: 6px;
+            border-radius: var(--radius-sm);
             font-size: 13px;
             flex: 1;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            font-family: 'Inter', sans-serif;
         }
 
         .form-row input:focus {
             outline: none;
-            border-color: #2563eb;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
         }
 
         .error-message {
-            color: #f87171;
+            color: var(--red);
             font-size: 12px;
             margin-top: 8px;
             display: none;
         }
 
-        .error-message.show {
-            display: block;
-        }
+        .error-message.show { display: block; }
 
         .info-message {
             color: #60a5fa;
@@ -393,27 +519,24 @@
             display: none;
         }
 
-        .info-message.show {
-            display: block;
-        }
+        .info-message.show { display: block; }
 
-        /* Toggle Switch */
+        /* ── Toggle Switch ── */
         .toggle-container {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 16px;
-            border-bottom: 1px solid #1e293b;
+            padding: 13px 18px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
         }
 
-        .toggle-container:hover {
-            background: #253348;
-        }
+        .toggle-container:hover { background: rgba(59,130,246,0.04); }
 
         .toggle-label {
             font-size: 13px;
             font-weight: 500;
-            color: #e2e8f0;
+            color: var(--text);
         }
 
         .toggle-switch {
@@ -421,97 +544,33 @@
             display: inline-block;
             width: 44px;
             height: 24px;
+            flex-shrink: 0;
         }
 
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
 
         .toggle-slider {
             position: absolute;
             cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #334155;
-            transition: 0.3s;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--border-2);
+            transition: 0.25s;
             border-radius: 24px;
         }
 
         .toggle-slider:before {
             position: absolute;
             content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: 0.3s;
+            height: 18px; width: 18px;
+            left: 3px; bottom: 3px;
+            background: white;
+            transition: 0.25s;
             border-radius: 50%;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
         }
 
-        .toggle-switch input:checked + .toggle-slider {
-            background-color: #2563eb;
-        }
-
-        .toggle-switch input:checked + .toggle-slider:before {
-            transform: translateX(20px);
-        }
-
-        .badge-active {
-            background: #065f46;
-            color: #6ee7b7;
-        }
-
-        .badge-inactive {
-            background: #3f3f46;
-            color: #a1a1aa;
-        }
-
-        .badge-paper {
-            background: #1e3a5f;
-            color: #93c5fd;
-        }
-
-        .badge-live {
-            background: #7f1d1d;
-            color: #fca5a5;
-        }
-
-        .btn-activate {
-            background: #059669;
-            color: white;
-            border: none;
-            padding: 4px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            margin-right: 4px;
-        }
-
-        .btn-activate:hover {
-            background: #047857;
-        }
-
-        .btn-edit {
-            background: #2563eb;
-            color: white;
-            border: none;
-            padding: 4px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            margin-right: 4px;
-        }
-
-        .btn-edit:hover {
-            background: #1d4ed8;
-        }
+        .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
 
         /* ── Scrollable table wrapper ── */
         .table-scroll {
@@ -527,18 +586,17 @@
 
         /* ── Mobile (≤640px) ── */
         @media (max-width: 640px) {
-            /* Smooth momentum scrolling */
             html { -webkit-text-size-adjust: 100%; }
             body { -webkit-overflow-scrolling: touch; }
 
-            /* Header: stack title and badges */
             header {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 8px;
-                padding: 12px 16px;
+                height: auto;
+                gap: 10px;
+                padding: 14px 16px;
             }
-            header h1 { font-size: 16px; }
+            header h1 { font-size: 15px; }
             .header-right {
                 width: 100%;
                 justify-content: flex-start;
@@ -546,20 +604,16 @@
                 gap: 8px;
             }
 
-            /* Reduce outer padding */
-            .container { padding: 12px; }
+            .container { padding: 14px 12px; }
 
-            /* Smaller card values so they don't overflow */
-            .card { padding: 14px; }
-            .card-value { font-size: 20px; }
+            .card { padding: 16px; }
+            .card-value { font-size: 21px; }
             .cards { gap: 10px; }
 
-            /* Charts shorter on mobile */
             .chart-wrap { height: 180px; }
             .chart-container { padding: 14px; }
             .period-buttons { flex-wrap: wrap; }
 
-            /* Section header: make room for the float button */
             .section-header {
                 display: flex;
                 align-items: center;
@@ -567,10 +621,8 @@
             }
             .section-header .btn-primary { float: none; }
 
-            /* Tables: ensure minimum column width so content stays readable */
             table { min-width: 480px; }
 
-            /* Bigger touch targets for action buttons */
             .btn-danger, .btn-activate, .btn-edit {
                 padding: 8px 12px;
                 font-size: 12px;
@@ -580,7 +632,6 @@
                 font-size: 13px;
             }
 
-            /* Forms: stack inputs vertically */
             .form-row {
                 flex-direction: column;
                 align-items: stretch;
@@ -588,20 +639,18 @@
             .form-row input { width: 100%; }
             .form-row button { width: 100%; }
 
-            /* Toggle rows: ensure label wraps cleanly */
             .toggle-label { font-size: 12px; line-height: 1.4; max-width: calc(100% - 60px); }
-
-            /* Signals strength bar shrinks nicely */
             .strength-bar { width: 40px; }
-
-            /* Details cell wraps instead of expanding */
             .details-cell { white-space: normal; font-size: 10px; }
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>Cappa Alpaca Trader Dashboard</h1>
+        <div class="header-logo">
+            <div class="header-logo-icon">📈</div>
+            <h1>Cappa Alpaca Trader</h1>
+        </div>
         <div class="header-right">
             <span id="scheduler-badge" class="scheduler-badge scheduler-stopped">Scheduler: --</span>
             <span id="market-status" class="market-status status-closed">Market: --</span>
@@ -790,22 +839,22 @@
                 </div>
 
                 <!-- Signal Mode -->
-                <div style="padding: 14px 20px; border-top: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                <div style="padding: 14px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
                     <div>
-                        <div style="font-size: 13px; font-weight: 500; color: #e2e8f0; margin-bottom: 2px;">Signal Mode</div>
-                        <div style="font-size: 11px; color: #64748b;">How indicators are combined into a final decision</div>
+                        <div style="font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px;">Signal Mode</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">How indicators are combined into a final decision</div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                        <select id="signal-mode-select" onchange="updateSignalMode()" style="background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 6px 10px; border-radius: 6px; font-size: 13px; cursor: pointer;">
+                        <select id="signal-mode-select" onchange="updateSignalMode()" style="background: var(--bg); border: 1px solid var(--border-2); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 13px; cursor: pointer;">
                             <option value="any">Any (1 indicator enough)</option>
                             <option value="majority">Majority (min. agree)</option>
                             <option value="unanimous">Unanimous (all must agree)</option>
                         </select>
                         <div id="min-agree-container" style="display: flex; align-items: center; gap: 6px;">
-                            <label style="font-size: 12px; color: #94a3b8;">Min agree:</label>
+                            <label style="font-size: 12px; color: var(--text-dim);">Min agree:</label>
                             <input type="number" id="signal-min-agree" min="1" max="4" value="2"
                                 onchange="updateSignalMode()"
-                                style="background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 6px 8px; border-radius: 6px; font-size: 13px; width: 56px; text-align: center;">
+                                style="background: var(--bg); border: 1px solid var(--border-2); color: var(--text); padding: 6px 8px; border-radius: 6px; font-size: 13px; width: 56px; text-align: center;">
                         </div>
                     </div>
                 </div>
@@ -815,49 +864,40 @@
         <!-- Automated Trading Settings -->
         <div class="section">
             <div class="section-header">Automated Trading</div>
-            <div class="auto-trade-info" style="padding: 16px 20px; background: #1e293b; border-radius: 8px; margin-bottom: 16px;">
-                <div class="toggle-container" style="margin-bottom: 12px;">
-                    <span class="toggle-label" style="font-weight: 600; color: #f1f5f9;">Enable Automated Trading</span>
+            <div class="auto-trade-info" style="padding: 16px 20px;">
+                <div class="toggle-container" style="margin-bottom: 12px; border-bottom: none;">
+                    <span class="toggle-label" style="font-weight: 700; color: var(--text);">Enable Automated Trading</span>
                     <label class="toggle-switch">
                         <input type="checkbox" id="toggle-schedule" onchange="toggleScheduler(this.checked)">
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
-                <div class="toggle-container" style="margin-bottom: 12px;">
-                    <div>
-                        <span class="toggle-label" style="font-weight: 600; color: #f1f5f9;">Market Hours Only</span>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Restrict trading to NYSE market hours (9:30 AM – 4:00 PM ET)</div>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="toggle-market-hours" onchange="toggleMarketHours(this.checked)">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div style="display: flex; gap: 24px; flex-wrap: wrap; padding: 4px 0 12px 0; border-bottom: 1px solid #334155; margin-bottom: 12px;">
+
+                <div style="display: flex; gap: 24px; flex-wrap: wrap; padding: 4px 0 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 14px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div>
-                            <div style="font-size: 13px; font-weight: 500; color: #e2e8f0;">Max Open Positions</div>
-                            <div style="font-size: 11px; color: #64748b;">Maximum simultaneous positions per account</div>
+                            <div style="font-size: 13px; font-weight: 500; color: var(--text);">Max Open Positions</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Maximum simultaneous positions per account</div>
                         </div>
                         <input type="number" id="max-positions-input" min="1" max="100" value="10"
-                            style="background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 6px 8px; border-radius: 6px; font-size: 14px; font-weight: 600; width: 70px; text-align: center;"
+                            style="background: var(--bg); border: 1px solid var(--border-2); color: var(--text); padding: 6px 8px; border-radius: 6px; font-size: 14px; font-weight: 600; width: 70px; text-align: center;"
                             onchange="updateExecutionSetting('max_positions', parseInt(this.value))">
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div>
-                            <div style="font-size: 13px; font-weight: 500; color: #e2e8f0;">Position Size</div>
-                            <div style="font-size: 11px; color: #64748b;">% of portfolio per trade</div>
+                            <div style="font-size: 13px; font-weight: 500; color: var(--text);">Position Size</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">% of portfolio per trade</div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 4px;">
                             <input type="number" id="position-size-input" min="0.1" max="100" step="0.5" value="5"
-                                style="background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 6px 8px; border-radius: 6px; font-size: 14px; font-weight: 600; width: 70px; text-align: center;"
+                                style="background: var(--bg); border: 1px solid var(--border-2); color: var(--text); padding: 6px 8px; border-radius: 6px; font-size: 14px; font-weight: 600; width: 70px; text-align: center;"
                                 onchange="updateExecutionSetting('position_size_pct', parseFloat(this.value))">
-                            <span style="font-size: 13px; color: #64748b;">%</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">%</span>
                         </div>
                     </div>
                 </div>
-                <div style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
-                    <p style="margin: 0 0 8px 0;"><strong style="color: #e2e8f0;">How it works:</strong></p>
+                <div style="font-size: 13px; color: var(--text-dim); line-height: 1.7;">
+                    <p style="margin: 0 0 8px 0;"><strong style="color: var(--text);">How it works:</strong></p>
                     <ul style="margin: 0; padding-left: 20px;">
                         <li>Scheduler checks every <strong>5 minutes</strong> for trading signals</li>
                         <li>Automatically executes BUY/SELL orders based on your indicators</li>
@@ -865,7 +905,7 @@
                         <li>All trades are logged in the audit trail</li>
                         <li>Runs 24/7 in the background (no need to keep dashboard open)</li>
                     </ul>
-                    <p style="margin: 12px 0 0 0; padding: 8px; background: #fef3c7; color: #92400e; border-radius: 4px;">
+                    <p style="margin: 14px 0 0 0; padding: 10px 14px; background: rgba(245,158,11,0.1); color: #fbbf24; border-radius: 8px; border-left: 3px solid #f59e0b;">
                         <strong>⚠️ Warning:</strong> Automated trading will execute real trades! Make sure you've tested your strategy and understand the risks before enabling.
                     </p>
                 </div>
@@ -885,7 +925,7 @@
                     <input type="text" id="account-name" placeholder="Account Name" />
                     <input type="text" id="account-api-key" placeholder="API Key" />
                     <input type="password" id="account-secret-key" placeholder="Secret Key" />
-                    <label style="display: flex; align-items: center; gap: 6px; color: #e2e8f0;">
+                    <label style="display: flex; align-items: center; gap: 6px; color: var(--text);">
                         <input type="checkbox" id="account-is-paper" checked />
                         <span style="font-size: 13px;">Paper Trading</span>
                     </label>
@@ -927,10 +967,11 @@
                             <th>Avg Entry</th>
                             <th>P&L</th>
                             <th>P&L %</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="positions-body">
-                        <tr><td colspan="6" class="empty-state loading">Loading positions...</td></tr>
+                        <tr><td colspan="7" class="empty-state loading">Loading positions...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1063,12 +1104,35 @@
                         <td>$${fmt(p.avg_entry)}</td>
                         <td class="${plClass}">${plSign}$${fmt(p.unrealized_pl)}</td>
                         <td class="${plClass}">${pctSign}${(p.unrealized_plpc * 100).toFixed(2)}%</td>
+                        <td><button class="btn-danger" style="font-size:12px;padding:3px 10px;" onclick="sellPosition('${p.symbol}', this)">Sell</button></td>
                     `;
                     tbody.appendChild(row);
                 });
                 updateTimestamp();
             } catch (e) {
                 console.error('Positions refresh failed:', e);
+            }
+        }
+
+        async function sellPosition(symbol, btn) {
+            if (!confirm(`Sell entire position in ${symbol}? This will submit a market sell order immediately.`)) return;
+            btn.disabled = true;
+            btn.textContent = '...';
+            try {
+                const resp = await fetch(`/api/positions/${encodeURIComponent(symbol)}/sell`, { method: 'POST' });
+                const data = await resp.json();
+                if (!resp.ok) {
+                    alert('Sell failed: ' + (data.error || 'Unknown error'));
+                    btn.disabled = false;
+                    btn.textContent = 'Sell';
+                } else {
+                    btn.textContent = 'Sold';
+                    setTimeout(refreshPositions, 1500);
+                }
+            } catch (e) {
+                alert('Sell failed: ' + e.message);
+                btn.disabled = false;
+                btn.textContent = 'Sell';
             }
         }
 
@@ -1307,7 +1371,6 @@
                 document.getElementById('toggle-macd').checked = data.macd.enabled;
                 document.getElementById('toggle-bollinger').checked = data.bollinger.enabled;
                 document.getElementById('toggle-schedule').checked = data.schedule.enabled;
-                document.getElementById('toggle-market-hours').checked = data.schedule.market_hours_only;
 
                 // Update signal mode
                 if (data.signal_mode) {
@@ -1432,28 +1495,6 @@
             }
         }
 
-        async function toggleMarketHours(enabled) {
-            try {
-                const resp = await fetch('/api/indicators', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ schedule_market_hours_only: enabled })
-                });
-
-                if (!resp.ok) {
-                    const data = await resp.json();
-                    alert('Failed to update setting: ' + (data.error || 'Unknown error'));
-                    await refreshIndicators(); // revert
-                    return;
-                }
-
-                console.log(`Market hours only: ${enabled}`);
-            } catch (e) {
-                console.error('Failed to toggle market hours:', e);
-                alert('Error: ' + e.message);
-                await refreshIndicators(); // revert
-            }
-        }
 
         async function toggleIndicator(indicator, enabled) {
             try {
@@ -1709,16 +1750,16 @@
                     },
                     scales: {
                         x: {
-                            ticks: { color: '#64748b', maxTicksLimit: 10, font: { size: 10 } },
-                            grid: { color: '#1e293b' },
+                            ticks: { color: '#5a7494', maxTicksLimit: 10, font: { size: 10 } },
+                            grid: { color: '#0d1829' },
                         },
                         y: {
                             ticks: {
-                                color: '#64748b',
+                                color: '#5a7494',
                                 font: { size: 10 },
                                 callback: v => '$' + Number(v).toLocaleString()
                             },
-                            grid: { color: '#334155' },
+                            grid: { color: '#1a2d47' },
                         }
                     }
                 };
@@ -1851,39 +1892,40 @@
                     return;
                 }
                 tbody.innerHTML = '';
+                data.sort((a, b) => (b.entry_price != null) - (a.entry_price != null));
                 data.forEach(s => {
                     const row = document.createElement('tr');
 
                     const entryPrice = s.entry_price != null
                         ? '$' + fmt(s.entry_price)
-                        : '<span style="color:#64748b">—</span>';
+                        : '<span style="color:var(--text-muted)">—</span>';
 
                     const plPct = s.unrealized_pl_pct != null
                         ? `<span class="${s.unrealized_pl_pct >= 0 ? 'positive' : 'negative'}">${s.unrealized_pl_pct >= 0 ? '+' : ''}${s.unrealized_pl_pct.toFixed(2)}%</span>`
-                        : '<span style="color:#64748b">—</span>';
+                        : '<span style="color:var(--text-muted)">—</span>';
 
                     const t = s.targets;
 
                     const bbUpper = t.bollinger?.upper != null
                         ? '<span class="positive">$' + fmt(t.bollinger.upper) + '</span>'
-                        : '<span style="color:#64748b">—</span>';
+                        : '<span style="color:var(--text-muted)">—</span>';
 
                     const bbLower = t.bollinger?.lower != null
                         ? '<span class="negative">$' + fmt(t.bollinger.lower) + '</span>'
-                        : '<span style="color:#64748b">—</span>';
+                        : '<span style="color:var(--text-muted)">—</span>';
 
                     const smaLong = t.sma?.long != null
                         ? '$' + fmt(t.sma.long)
-                        : '<span style="color:#64748b">—</span>';
+                        : '<span style="color:var(--text-muted)">—</span>';
 
-                    let rsiCell = '<span style="color:#64748b">—</span>';
+                    let rsiCell = '<span style="color:var(--text-muted)">—</span>';
                     if (t.rsi?.value != null) {
                         const v = t.rsi.value;
                         const color = v >= t.rsi.overbought ? '#f87171' : v <= t.rsi.oversold ? '#4ade80' : '#e2e8f0';
                         rsiCell = `<span style="color:${color}">${v}</span> / ${t.rsi.overbought}`;
                     }
 
-                    let macdCell = '<span style="color:#64748b">—</span>';
+                    let macdCell = '<span style="color:var(--text-muted)">—</span>';
                     if (t.macd?.histogram != null) {
                         const h = t.macd.histogram;
                         const cls = h >= 0 ? 'positive' : 'negative';
