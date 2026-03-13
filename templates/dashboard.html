@@ -823,16 +823,7 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
-                <div class="toggle-container" style="margin-bottom: 12px;">
-                    <div>
-                        <span class="toggle-label" style="font-weight: 600; color: #f1f5f9;">Market Hours Only</span>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Restrict trading to NYSE market hours (9:30 AM – 4:00 PM ET)</div>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="toggle-market-hours" onchange="toggleMarketHours(this.checked)">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
+
                 <div style="display: flex; gap: 24px; flex-wrap: wrap; padding: 4px 0 12px 0; border-bottom: 1px solid #334155; margin-bottom: 12px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div>
@@ -927,10 +918,11 @@
                             <th>Avg Entry</th>
                             <th>P&L</th>
                             <th>P&L %</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="positions-body">
-                        <tr><td colspan="6" class="empty-state loading">Loading positions...</td></tr>
+                        <tr><td colspan="7" class="empty-state loading">Loading positions...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1063,12 +1055,35 @@
                         <td>$${fmt(p.avg_entry)}</td>
                         <td class="${plClass}">${plSign}$${fmt(p.unrealized_pl)}</td>
                         <td class="${plClass}">${pctSign}${(p.unrealized_plpc * 100).toFixed(2)}%</td>
+                        <td><button class="btn-danger" style="font-size:12px;padding:3px 10px;" onclick="sellPosition('${p.symbol}', this)">Sell</button></td>
                     `;
                     tbody.appendChild(row);
                 });
                 updateTimestamp();
             } catch (e) {
                 console.error('Positions refresh failed:', e);
+            }
+        }
+
+        async function sellPosition(symbol, btn) {
+            if (!confirm(`Sell entire position in ${symbol}? This will submit a market sell order immediately.`)) return;
+            btn.disabled = true;
+            btn.textContent = '...';
+            try {
+                const resp = await fetch(`/api/positions/${encodeURIComponent(symbol)}/sell`, { method: 'POST' });
+                const data = await resp.json();
+                if (!resp.ok) {
+                    alert('Sell failed: ' + (data.error || 'Unknown error'));
+                    btn.disabled = false;
+                    btn.textContent = 'Sell';
+                } else {
+                    btn.textContent = 'Sold';
+                    setTimeout(refreshPositions, 1500);
+                }
+            } catch (e) {
+                alert('Sell failed: ' + e.message);
+                btn.disabled = false;
+                btn.textContent = 'Sell';
             }
         }
 
@@ -1307,7 +1322,6 @@
                 document.getElementById('toggle-macd').checked = data.macd.enabled;
                 document.getElementById('toggle-bollinger').checked = data.bollinger.enabled;
                 document.getElementById('toggle-schedule').checked = data.schedule.enabled;
-                document.getElementById('toggle-market-hours').checked = data.schedule.market_hours_only;
 
                 // Update signal mode
                 if (data.signal_mode) {
@@ -1432,28 +1446,6 @@
             }
         }
 
-        async function toggleMarketHours(enabled) {
-            try {
-                const resp = await fetch('/api/indicators', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ schedule_market_hours_only: enabled })
-                });
-
-                if (!resp.ok) {
-                    const data = await resp.json();
-                    alert('Failed to update setting: ' + (data.error || 'Unknown error'));
-                    await refreshIndicators(); // revert
-                    return;
-                }
-
-                console.log(`Market hours only: ${enabled}`);
-            } catch (e) {
-                console.error('Failed to toggle market hours:', e);
-                alert('Error: ' + e.message);
-                await refreshIndicators(); // revert
-            }
-        }
 
         async function toggleIndicator(indicator, enabled) {
             try {

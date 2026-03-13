@@ -427,6 +427,37 @@ def create_app(config=None) -> Flask:
             logger.exception("Failed to get positions: %s", e)
             return jsonify({"error": str(e)}), 500
 
+    @app.route("/api/positions/<path:symbol>/sell", methods=["POST"])
+    @login_required
+    @csrf.exempt
+    def api_sell_position(symbol: str):
+        """Market-sell the full quantity of an open position."""
+        try:
+            symbol = symbol.upper()
+            client = get_user_client()
+
+            # Confirm position exists
+            position = client.get_position(symbol)
+            if position is None:
+                return jsonify({"error": f"No open position for {symbol}"}), 404
+
+            qty = float(position.qty)
+            from alpaca.trading.requests import MarketOrderRequest
+            from alpaca.trading.enums import OrderSide, TimeInForce
+            order_request = MarketOrderRequest(
+                symbol=symbol,
+                qty=qty,
+                side=OrderSide.SELL,
+                time_in_force=TimeInForce.GTC,
+            )
+            order = client.trading.submit_order(order_request)
+            log_audit("manual_sell", "order", None, {"symbol": symbol, "qty": qty})
+            logger.info("User %s manually sold %s qty=%s", current_user.username, symbol, qty)
+            return jsonify({"success": True, "symbol": symbol, "qty": qty, "order_id": str(order.id)})
+        except Exception as e:
+            logger.exception("Failed to sell position %s: %s", symbol, e)
+            return jsonify({"error": str(e)}), 500
+
     @app.route("/api/orders")
     @login_required
     def api_orders():
