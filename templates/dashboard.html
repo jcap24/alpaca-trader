@@ -55,6 +55,7 @@
             top: 0;
             z-index: 100;
             box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,0.4);
+            transition: height 0.25s ease, padding 0.25s ease;
         }
 
         header::before {
@@ -64,6 +65,16 @@
             height: 2px;
             background: linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
         }
+
+        header.scrolled {
+            height: 44px;
+            padding: 0 28px;
+        }
+
+        header.scrolled .header-logo-icon { width: 22px; height: 22px; font-size: 11px; }
+        header.scrolled h1 { font-size: 13px; }
+        header.scrolled .market-status,
+        header.scrolled .scheduler-badge { font-size: 10px; padding: 3px 9px; }
 
         .header-logo {
             display: flex;
@@ -80,6 +91,7 @@
             align-items: center;
             justify-content: center;
             font-size: 15px;
+            transition: width 0.25s ease, height 0.25s ease, font-size 0.25s ease;
         }
 
         header h1 {
@@ -87,6 +99,7 @@
             font-weight: 700;
             color: #f0f6ff;
             letter-spacing: -0.01em;
+            transition: font-size 0.25s ease;
         }
 
         .header-right {
@@ -596,6 +609,14 @@
                 gap: 10px;
                 padding: 14px 16px;
             }
+            header.scrolled {
+                flex-direction: row;
+                align-items: center;
+                height: 44px;
+                padding: 0 16px;
+                gap: 0;
+            }
+            header.scrolled .header-right { display: none; }
             header h1 { font-size: 15px; }
             .header-right {
                 width: 100%;
@@ -1979,6 +2000,21 @@
         setInterval(refreshOrders, 60000);
         setInterval(refreshWatchlist, 60000);
         setInterval(refreshAccounts, 60000);
+
+        // --- Shrink header on scroll ---
+        (function () {
+            const hdr = document.querySelector('header');
+            let ticking = false;
+            window.addEventListener('scroll', () => {
+                if (!ticking) {
+                    requestAnimationFrame(() => {
+                        hdr.classList.toggle('scrolled', window.scrollY > 40);
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            }, { passive: true });
+        })();
     </script>
 </body>
 </html>
