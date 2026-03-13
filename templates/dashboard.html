@@ -936,6 +936,35 @@
             </div>
         </div>
 
+        <!-- Signal History -->
+        <div class="section">
+            <div class="section-header collapsible" onclick="toggleSection('signal-history-body-wrap', this)">
+                <span>Signal History</span>
+                <span class="chevron">&#8250;</span>
+            </div>
+            <div id="signal-history-body-wrap" class="collapsible-body" style="max-height: 0;">
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Symbol</th>
+                                <th>Signal</th>
+                                <th>Strength</th>
+                                <th>RSI</th>
+                                <th>SMA</th>
+                                <th>MACD</th>
+                                <th>Bollinger</th>
+                            </tr>
+                        </thead>
+                        <tbody id="signal-history-body">
+                            <tr><td colspan="8" class="empty-state loading">Loading signal history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Trade History -->
         <div class="section">
             <div class="section-header" style="display: flex; align-items: center; justify-content: space-between;">
@@ -1171,6 +1200,49 @@
                 updateTimestamp();
             } catch (e) {
                 console.error('Orders refresh failed:', e);
+            }
+        }
+
+        // --- Signal History ---
+        async function refreshSignalHistory() {
+            try {
+                const data = await fetchJSON('/api/signal-history?limit=100');
+                const tbody = document.getElementById('signal-history-body');
+                if (!data.length) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No signal history yet — enable automated trading to start logging.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.forEach(s => {
+                    const badgeClass = s.signal === 'buy' ? 'badge-buy' : s.signal === 'sell' ? 'badge-sell' : 'badge-hold';
+                    const time = new Date(s.timestamp).toLocaleString();
+                    const strength = s.strength != null ? s.strength.toFixed(1) + '%' : '—';
+
+                    const indCell = name => {
+                        const v = s.indicators[name];
+                        if (!v) return '<span style="color:#64748b">—</span>';
+                        return v === 'buy'
+                            ? '<span class="positive">▲ buy</span>'
+                            : v === 'sell'
+                            ? '<span class="negative">▼ sell</span>'
+                            : '<span style="color:#64748b">hold</span>';
+                    };
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="white-space:nowrap;font-size:12px;">${time}</td>
+                        <td><strong>${s.symbol}</strong></td>
+                        <td><span class="badge ${badgeClass}">${s.signal}</span></td>
+                        <td>${strength}</td>
+                        <td>${indCell('rsi_signal')}</td>
+                        <td>${indCell('sma_signal')}</td>
+                        <td>${indCell('macd_signal')}</td>
+                        <td>${indCell('bb_signal')}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (e) {
+                console.error('Signal history refresh failed:', e);
             }
         }
 
@@ -1851,6 +1923,7 @@
                     return;
                 }
                 tbody.innerHTML = '';
+                data.sort((a, b) => (b.entry_price != null) - (a.entry_price != null));
                 data.forEach(s => {
                     const row = document.createElement('tr');
 
@@ -1916,6 +1989,7 @@
         refreshSignals();
         refreshPriceTargets();
         refreshOrders();
+        refreshSignalHistory();
         refreshWatchlist();
         refreshIndicators();
         refreshAccounts();
@@ -1929,6 +2003,7 @@
         setInterval(refreshSignals, 60000);
         setInterval(refreshPriceTargets, 60000);
         setInterval(refreshOrders, 60000);
+        setInterval(refreshSignalHistory, 60000);
         setInterval(refreshWatchlist, 60000);
         setInterval(refreshAccounts, 60000);
     </script>

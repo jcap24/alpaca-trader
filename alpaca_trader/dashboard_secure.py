@@ -455,6 +455,34 @@ def create_app(config=None) -> Flask:
             logger.exception("Failed to get orders: %s", e)
             return jsonify({"error": str(e)}), 500
 
+    @app.route("/api/signal-history")
+    @login_required
+    def api_signal_history():
+        """Get signal evaluation history from the audit log."""
+        try:
+            limit = min(int(request.args.get("limit", 100)), 500)
+            entries = (
+                AuditLog.query
+                .filter_by(user_id=current_user.id, action="signal_evaluated")
+                .order_by(AuditLog.timestamp.desc())
+                .limit(limit)
+                .all()
+            )
+            result = []
+            for e in entries:
+                details = json.loads(e.details) if e.details else {}
+                result.append({
+                    "timestamp": e.timestamp.isoformat() + "Z",
+                    "symbol": details.get("symbol"),
+                    "signal": details.get("signal"),
+                    "strength": details.get("strength"),
+                    "indicators": details.get("indicators", {}),
+                })
+            return jsonify(result)
+        except Exception as e:
+            logger.exception("Failed to get signal history: %s", e)
+            return jsonify({"error": str(e)}), 500
+
     @app.route("/api/portfolio-history")
     @login_required
     def api_portfolio_history():
@@ -1300,7 +1328,10 @@ def start_dashboard_secure(
     logger.info("Login at: http://%s:%d/login", host, port)
 
     # Run Flask app
-    app.run(host=host, port=port, debug=os.getenv("FLASK_ENV") != "production")
+    # use_reloader=False prevents Flask from spawning a second process that
+    # would start a duplicate AutoTrader scheduler instance.
+    debug = os.getenv("FLASK_ENV") == "development"
+    app.run(host=host, port=port, debug=debug, use_reloader=False)
 
 
 if __name__ == "__main__":

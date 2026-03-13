@@ -175,6 +175,18 @@ class AutoTrader:
 
                 signals_processed += 1
 
+                # Log every signal evaluation (BUY, SELL, or HOLD) for history
+                self._log_audit(
+                    user_id=user.id,
+                    action="signal_evaluated",
+                    details={
+                        "symbol": symbol,
+                        "signal": signal.action.value,
+                        "strength": round(signal.strength * 100, 1),
+                        "indicators": signal.details,
+                    }
+                )
+
                 # Execute trade based on signal
                 if signal.action == Action.BUY:
                     result = executor.execute_signal(signal)
