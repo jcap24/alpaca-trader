@@ -1732,12 +1732,18 @@
                     return;
                 }
 
-                // Use time labels for intraday, date labels for daily
-                const isIntraday = data.timeframe && (data.timeframe.includes('Min') || data.timeframe === '1H');
+                // Format x-axis labels based on period:
+                //   1D  → intraday times only:      "9:30 AM"
+                //   1W  → date + hour (multi-day):  "Mar 9, 10 AM"
+                //   1M+ → date only:                "Mar 9"
                 const labels = data.timestamp.map(ts => {
                     const d = new Date(ts * 1000);
-                    if (isIntraday) {
+                    if (period === '1D') {
                         return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    }
+                    if (period === '1W') {
+                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                             + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
                     }
                     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 });

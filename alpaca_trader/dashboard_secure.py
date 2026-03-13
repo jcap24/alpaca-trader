@@ -508,12 +508,13 @@ def create_app(config=None) -> Flask:
 
         try:
             client = get_user_client()
-            history_req = GetPortfolioHistoryRequest(
-                period=period,
-                timeframe=timeframe,
-                date_end=date.today(),  # include today's data
-                extended_hours=False,
-            )
+            # For 1D, omit date_end so Alpaca returns the last trading session.
+            # Passing date_end=today outside market hours causes empty data because
+            # Alpaca treats today as a non-trading day and returns no intraday bars.
+            req_kwargs = dict(period=period, timeframe=timeframe, extended_hours=False)
+            if period != "1D":
+                req_kwargs["date_end"] = date.today()
+            history_req = GetPortfolioHistoryRequest(**req_kwargs)
             history = client.get_portfolio_history(filter=history_req)
 
             return jsonify({
