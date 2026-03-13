@@ -5,6 +5,7 @@ Each user can enable/disable their own automated trading schedule.
 """
 
 import logging
+import time as time_module
 from datetime import datetime, time
 from typing import Optional
 
@@ -47,6 +48,9 @@ class AutoTrader:
             id="auto_trader_check",
             name="Check all users for trading signals",
             replace_existing=True,
+            max_instances=1,  # never run two cycles simultaneously
+            coalesce=True,    # if a run was missed while busy, fire once (not N times) on recovery
+            misfire_grace_time=60,  # allow up to 60s late start before treating it as missed
         )
         logger.info("AutoTrader job scheduled (every 5 minutes)")
 
@@ -57,6 +61,7 @@ class AutoTrader:
 
     def _check_all_users(self):
         """Check all users with scheduling enabled and execute trades."""
+        cycle_start = time_module.monotonic()
         with self.app.app_context():
             try:
                 # Find all users with scheduling enabled
@@ -86,6 +91,10 @@ class AutoTrader:
 
             except Exception as e:
                 logger.exception("AutoTrader check failed: %s", e)
+
+            finally:
+                elapsed = time_module.monotonic() - cycle_start
+                logger.info("AutoTrader cycle completed in %.1fs", elapsed)
 
     def _process_user(self, user: User):
         """Process a single user's automated trading."""
