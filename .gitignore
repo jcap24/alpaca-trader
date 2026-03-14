@@ -21,3 +21,6 @@ gunicorn.pid
 
 # Migrations
 migrations/versions/*.pyc
+
+# Claude Code
+.claude/
