@@ -427,13 +427,15 @@ def create_app(config=None) -> Flask:
             logger.exception("Failed to get positions: %s", e)
             return jsonify({"error": str(e)}), 500
 
-    @app.route("/api/positions/<path:symbol>/sell", methods=["POST"])
+    @app.route("/api/positions/sell", methods=["POST"])
     @login_required
     @csrf.exempt
-    def api_sell_position(symbol: str):
+    def api_sell_position():
         """Market-sell the full quantity of an open position."""
         try:
-            symbol = symbol.upper()
+            symbol = (request.json or {}).get("symbol", "").upper()
+            if not symbol:
+                return jsonify({"error": "symbol is required"}), 400
             client = get_user_client()
 
             # Confirm position exists
@@ -448,7 +450,7 @@ def create_app(config=None) -> Flask:
                 symbol=symbol,
                 qty=qty,
                 side=OrderSide.SELL,
-                time_in_force=TimeInForce.GTC,
+                time_in_force=TimeInForce.GTC if is_crypto_symbol(symbol) else TimeInForce.DAY,
             )
             order = client.trading.submit_order(order_request)
             log_audit("manual_sell", "order", None, {"symbol": symbol, "qty": qty})
@@ -535,6 +537,45 @@ def create_app(config=None) -> Flask:
                 "base_value": 0,
                 "timeframe": timeframe,
             })
+
+    # =============================================================================
+    # Screener API
+    # =============================================================================
+
+    @app.route("/api/screener")
+    @login_required
+    def api_screener():
+        """Return most-active stocks, top gainers, and top losers."""
+        from alpaca.data.requests import MostActivesRequest, MarketMoversRequest
+        try:
+            client = get_user_client()
+            top = 20
+
+            most_actives = client.screener.get_most_actives(
+                MostActivesRequest(top=top, by="volume")
+            )
+            movers = client.screener.get_market_movers(
+                MarketMoversRequest(top=top)
+            )
+
+            return jsonify({
+                "most_actives": [
+                    {"symbol": s.symbol, "volume": s.volume, "trade_count": s.trade_count}
+                    for s in most_actives.most_actives
+                ],
+                "gainers": [
+                    {"symbol": s.symbol, "price": s.price, "change": s.change, "percent_change": s.percent_change}
+                    for s in movers.gainers
+                ],
+                "losers": [
+                    {"symbol": s.symbol, "price": s.price, "change": s.change, "percent_change": s.percent_change}
+                    for s in movers.losers
+                ],
+                "last_updated": most_actives.last_updated.isoformat(),
+            })
+        except Exception as e:
+            logger.warning("Screener unavailable: %s", e)
+            return jsonify({"error": str(e)}), 502
 
     # =============================================================================
     # Signals API

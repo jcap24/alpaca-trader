@@ -2,6 +2,7 @@ import logging
 
 from alpaca.trading.client import TradingClient
 from alpaca.data.historical import StockHistoricalDataClient, CryptoHistoricalDataClient
+from alpaca.data.historical.screener import ScreenerClient
 
 logger = logging.getLogger("alpaca_trader")
 
@@ -18,6 +19,7 @@ class AlpacaClient:
         self.trading = TradingClient(api_key, secret_key, paper=paper)
         self.data = StockHistoricalDataClient(api_key, secret_key)
         self.crypto_data = CryptoHistoricalDataClient(api_key, secret_key)
+        self.screener = ScreenerClient(api_key, secret_key)
         logger.info("Alpaca client initialized (paper=%s)", paper)
 
     def get_account(self):
