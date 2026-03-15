@@ -604,6 +604,42 @@
         .screener-tab:hover { color: var(--text-dim); }
         .screener-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+        /* ── Market Screener ── */
+        .screener-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-2);
+        }
+
+        .screener-tab {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.15s;
+            margin-bottom: -1px;
+        }
+
+        .screener-tab:hover { color: var(--text-dim); }
+        .screener-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .screener-note {
+            padding: 7px 18px;
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+            font-family: 'Inter', sans-serif;
+        }
+
         /* ── Scrollable table wrapper ── */
         .table-scroll {
             overflow-x: auto;
@@ -744,6 +780,83 @@
                 <div class="chart-wrap">
                     <canvas id="pl-chart"></canvas>
                 </div>
+            </div>
+        </div>
+
+        <!-- Market Screener -->
+        <div class="section">
+            <div class="section-header collapsible" onclick="toggleSection('screener-body-wrap', this)">
+                <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
+                    <span>Market Screener</span>
+                    <span id="screener-updated" style="font-size:11px; font-weight:400; color:var(--text-muted); text-transform:none; letter-spacing:0;"></span>
+                </div>
+                <span class="collapse-chevron">&#9660;</span>
+            </div>
+            <div id="screener-body-wrap" class="collapsible-body" style="max-height:0;">
+
+                <!-- Tab bar -->
+                <div class="screener-tabs">
+                    <button class="screener-tab active" onclick="switchScreenerTab('gainers', this)">Top Gainers</button>
+                    <button class="screener-tab" onclick="switchScreenerTab('losers', this)">Top Losers</button>
+                    <button class="screener-tab" onclick="switchScreenerTab('actives', this)">Most Active</button>
+                </div>
+
+                <!-- Gainers -->
+                <div id="screener-gainers" class="screener-panel">
+                    <div class="screener-note">$ change and % change are vs. previous trading day close</div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr>
+                                <th>Symbol</th>
+                                <th>Price</th>
+                                <th>Change</th>
+                                <th>% Change (vs prev close)</th>
+                                <th></th>
+                            </tr></thead>
+                            <tbody id="screener-gainers-body">
+                                <tr><td colspan="5" class="empty-state loading">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Losers -->
+                <div id="screener-losers" class="screener-panel" style="display:none;">
+                    <div class="screener-note">$ change and % change are vs. previous trading day close</div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr>
+                                <th>Symbol</th>
+                                <th>Price</th>
+                                <th>Change</th>
+                                <th>% Change (vs prev close)</th>
+                                <th></th>
+                            </tr></thead>
+                            <tbody id="screener-losers-body">
+                                <tr><td colspan="5" class="empty-state loading">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Most Active -->
+                <div id="screener-actives" class="screener-panel" style="display:none;">
+                    <div class="screener-note">Ranked by volume for the current trading session</div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr>
+                                <th>Symbol</th>
+                                <th>Volume</th>
+                                <th>Trade Count</th>
+                                <th></th>
+                            </tr></thead>
+                            <tbody id="screener-actives-body">
+                                <tr><td colspan="4" class="empty-state loading">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -1014,82 +1127,6 @@
                         <tr><td colspan="7" class="empty-state loading">Loading positions...</td></tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <!-- Market Screener -->
-        <div class="section">
-            <div class="section-header collapsible" onclick="toggleSection('screener-body-wrap', this)">
-                <span>Market Screener</span>
-                <span class="collapse-chevron">&#9660;</span>
-            </div>
-            <div id="screener-body-wrap" class="collapsible-body" style="max-height: 0;">
-                <!-- Tabs -->
-                <div style="display: flex; gap: 0; border-bottom: 1px solid var(--border);">
-                    <button class="screener-tab active" data-tab="most-actives" onclick="switchScreenerTab('most-actives')">Most Active</button>
-                    <button class="screener-tab" data-tab="gainers" onclick="switchScreenerTab('gainers')">Top Gainers</button>
-                    <button class="screener-tab" data-tab="losers" onclick="switchScreenerTab('losers')">Top Losers</button>
-                </div>
-                <div id="screener-last-updated" style="padding: 6px 18px; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border);"></div>
-
-                <!-- Most Active -->
-                <div id="screener-most-actives" class="screener-panel">
-                    <div class="table-scroll">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Symbol</th>
-                                    <th>Volume</th>
-                                    <th>Trades</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="screener-actives-body">
-                                <tr><td colspan="4" class="empty-state loading">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Gainers -->
-                <div id="screener-gainers" class="screener-panel" style="display:none;">
-                    <div class="table-scroll">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Symbol</th>
-                                    <th>Price</th>
-                                    <th>Change</th>
-                                    <th>% Change</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="screener-gainers-body">
-                                <tr><td colspan="5" class="empty-state loading">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Losers -->
-                <div id="screener-losers" class="screener-panel" style="display:none;">
-                    <div class="table-scroll">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Symbol</th>
-                                    <th>Price</th>
-                                    <th>Change</th>
-                                    <th>% Change</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="screener-losers-body">
-                                <tr><td colspan="5" class="empty-state loading">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -2077,6 +2114,112 @@
             }
         }
 
+        // --- Market Screener ---
+        let screenerData = null;
+
+        function switchScreenerTab(tab, btn) {
+            document.querySelectorAll('.screener-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            ['gainers', 'losers', 'actives'].forEach(t => {
+                document.getElementById('screener-' + t).style.display = t === tab ? '' : 'none';
+            });
+        }
+
+        function fmtVol(n) {
+            if (n == null) return '--';
+            if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+            if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+            if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+            return n.toString();
+        }
+
+        function renderMoverRows(tbodyId, rows) {
+            const tbody = document.getElementById(tbodyId);
+            if (!rows || !rows.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No data available</td></tr>';
+                return;
+            }
+            tbody.innerHTML = '';
+            rows.forEach(r => {
+                // Alpaca's `change` field is actually a % value, not a dollar amount.
+                // Compute real dollar change from price and percent_change.
+                const pct = r.percent_change;           // e.g. 2.98 (meaning 2.98%)
+                const prevClose = r.price / (1 + pct / 100);
+                const dollarChg = r.price - prevClose;
+                const isPos = pct >= 0;
+                const cls  = isPos ? 'positive' : 'negative';
+                const sign = isPos ? '+' : '';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${r.symbol}</strong></td>
+                    <td>$${fmt(r.price)}</td>
+                    <td class="${cls}">${sign}$${fmt(Math.abs(dollarChg))}</td>
+                    <td class="${cls}">${sign}${pct.toFixed(2)}%</td>
+                    <td><button class="btn-edit" style="font-size:11px;padding:3px 9px;" onclick="addScreenerSymbol('${r.symbol}')">+ Watchlist</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function refreshScreener() {
+            try {
+                const data = await fetchJSON('/api/screener');
+                if (data.error) return;
+                screenerData = data;
+
+                // Show "vs prev close · as of [date]" in the header
+                if (data.last_updated) {
+                    const d = new Date(data.last_updated);
+                    const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    document.getElementById('screener-updated').textContent =
+                        'vs prev close · session as of ' + label;
+                }
+
+                renderMoverRows('screener-gainers-body', data.gainers);
+                renderMoverRows('screener-losers-body',  data.losers);
+
+                // Most actives
+                const tbody = document.getElementById('screener-actives-body');
+                if (!data.most_actives || !data.most_actives.length) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No data available</td></tr>';
+                } else {
+                    tbody.innerHTML = '';
+                    data.most_actives.forEach(r => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><strong>${r.symbol}</strong></td>
+                            <td>${fmtVol(r.volume)}</td>
+                            <td>${fmtVol(r.trade_count)}</td>
+                            <td><button class="btn-edit" style="font-size:11px;padding:3px 9px;" onclick="addScreenerSymbol('${r.symbol}')">+ Watchlist</button></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+            } catch (e) {
+                console.error('Screener refresh failed:', e);
+            }
+        }
+
+        async function addScreenerSymbol(symbol) {
+            try {
+                const resp = await fetch('/api/watchlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol })
+                });
+                const data = await resp.json();
+                if (!resp.ok) {
+                    alert('Could not add ' + symbol + ': ' + (data.error || 'Unknown error'));
+                    return;
+                }
+                await refreshWatchlist();
+                await refreshSignals();
+            } catch (e) {
+                alert('Network error: ' + e.message);
+            }
+        }
+
         // --- Initial load ---
         refreshAccount();
         refreshScheduler();
@@ -2089,6 +2232,7 @@
         refreshAccounts();
         refreshExecutionSettings();
         refreshCharts('1M');  // default to 1M on load
+        refreshScreener();
 
         // --- Auto-refresh intervals ---
         setInterval(refreshAccount, 30000);
@@ -2099,126 +2243,7 @@
         setInterval(refreshOrders, 60000);
         setInterval(refreshWatchlist, 60000);
         setInterval(refreshAccounts, 60000);
-
-        // --- Market Screener ---
-        let screenerData = null;
-
-        function switchScreenerTab(tab) {
-            document.querySelectorAll('.screener-tab').forEach(t => t.classList.remove('active'));
-            document.querySelector(`.screener-tab[data-tab="${tab}"]`).classList.add('active');
-            document.querySelectorAll('.screener-panel').forEach(p => p.style.display = 'none');
-            document.getElementById('screener-' + tab).style.display = 'block';
-        }
-
-        function screenerAddBtn(symbol) {
-            return `<button class="btn-primary" style="float:none;padding:4px 10px;font-size:11px;" onclick="screenerAddToWatchlist('${symbol}', this)">+ Add</button>`;
-        }
-
-        async function screenerAddToWatchlist(symbol, btn) {
-            btn.disabled = true;
-            btn.textContent = '...';
-            try {
-                const resp = await fetch('/api/watchlist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ symbol })
-                });
-                const data = await resp.json();
-                if (!resp.ok) {
-                    btn.textContent = data.error || 'Error';
-                    setTimeout(() => { btn.disabled = false; btn.textContent = '+ Add'; }, 2000);
-                } else {
-                    btn.textContent = 'Added';
-                    btn.style.background = '#059669';
-                    await refreshWatchlist();
-                }
-            } catch (e) {
-                btn.textContent = 'Error';
-                setTimeout(() => { btn.disabled = false; btn.textContent = '+ Add'; }, 2000);
-            }
-        }
-
-        function renderScreener(data) {
-            screenerData = data;
-
-            // Most actives
-            const activesBody = document.getElementById('screener-actives-body');
-            activesBody.innerHTML = '';
-            data.most_actives.forEach(s => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${s.symbol}</strong></td>
-                    <td>${Number(s.volume).toLocaleString()}</td>
-                    <td>${Number(s.trade_count).toLocaleString()}</td>
-                    <td>${screenerAddBtn(s.symbol)}</td>
-                `;
-                activesBody.appendChild(row);
-            });
-
-            // Gainers
-            const gainersBody = document.getElementById('screener-gainers-body');
-            gainersBody.innerHTML = '';
-            data.gainers.forEach(s => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${s.symbol}</strong></td>
-                    <td>$${fmt(s.price)}</td>
-                    <td class="positive">+$${fmt(s.change)}</td>
-                    <td class="positive">+${s.percent_change.toFixed(2)}%</td>
-                    <td>${screenerAddBtn(s.symbol)}</td>
-                `;
-                gainersBody.appendChild(row);
-            });
-
-            // Losers
-            const losersBody = document.getElementById('screener-losers-body');
-            losersBody.innerHTML = '';
-            data.losers.forEach(s => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${s.symbol}</strong></td>
-                    <td>$${fmt(s.price)}</td>
-                    <td class="negative">-$${fmt(Math.abs(s.change))}</td>
-                    <td class="negative">${s.percent_change.toFixed(2)}%</td>
-                    <td>${screenerAddBtn(s.symbol)}</td>
-                `;
-                losersBody.appendChild(row);
-            });
-
-            if (data.last_updated) {
-                const d = new Date(data.last_updated);
-                document.getElementById('screener-last-updated').textContent =
-                    'Last updated: ' + d.toLocaleTimeString();
-            }
-        }
-
-        async function refreshScreener() {
-            try {
-                const data = await fetchJSON('/api/screener');
-                if (data.error) {
-                    ['screener-actives-body', 'screener-gainers-body', 'screener-losers-body'].forEach(id => {
-                        const el = document.getElementById(id);
-                        const cols = id === 'screener-actives-body' ? 4 : 5;
-                        el.innerHTML = `<tr><td colspan="${cols}" class="empty-state">Screener unavailable — requires Alpaca data subscription.</td></tr>`;
-                    });
-                    return;
-                }
-                renderScreener(data);
-            } catch (e) {
-                console.error('Screener refresh failed:', e);
-            }
-        }
-
-        // Load screener when section is first expanded
-        document.addEventListener('DOMContentLoaded', () => {
-            const screenerHeader = document.querySelector('[onclick*="screener-body-wrap"]');
-            if (screenerHeader) {
-                const origOnclick = screenerHeader.getAttribute('onclick');
-                screenerHeader.addEventListener('click', () => {
-                    if (!screenerData) refreshScreener();
-                });
-            }
-        });
+        setInterval(refreshScreener, 300000);  // screener every 5 min
 
         // --- Shrink header on scroll ---
         (function () {
