@@ -499,19 +499,21 @@ def create_app(config=None) -> Flask:
 
             # Keep only filled orders with a price, sorted oldest → newest
             filled = sorted(
-                [o for o in orders if o.filled_avg_price and o.filled_at],
+                [o for o in orders if o.filled_avg_price and o.filled_at and (o.filled_qty or o.qty)],
                 key=lambda o: o.filled_at,
             )
 
             # FIFO matching per symbol
             from collections import defaultdict
-            buys = defaultdict(list)   # symbol -> deque of pending buy lots
+            buys = defaultdict(list)   # symbol -> list of pending buy lots
             cycles = []
 
             for o in filled:
                 symbol = o.symbol
                 side = o.side.value if o.side else ""
-                qty = float(o.qty or 0)
+                # filled_qty is the actual executed quantity; qty is the requested amount
+                # (can be None for notional/dollar-amount orders)
+                qty = float(o.filled_qty or o.qty or 0)
                 price = float(o.filled_avg_price)
                 ts = o.filled_at.isoformat()
 
