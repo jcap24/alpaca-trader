@@ -38,6 +38,7 @@ class PortfolioManager:
                 "qty": float(p.qty),
                 "market_value": float(p.market_value),
                 "avg_entry": float(p.avg_entry_price),
+                "current_price": float(p.current_price),
                 "unrealized_pl": float(p.unrealized_pl),
                 "unrealized_plpc": float(p.unrealized_plpc),
             }
