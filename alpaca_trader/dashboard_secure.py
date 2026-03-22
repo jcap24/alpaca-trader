@@ -488,6 +488,81 @@ def create_app(config=None) -> Flask:
             logger.exception("Failed to get orders: %s", e)
             return jsonify({"error": str(e)}), 500
 
+    @app.route("/api/trade-cycles")
+    @login_required
+    def api_trade_cycles():
+        """Return completed and open buy/sell cycles grouped by symbol."""
+        try:
+            client = get_user_client()
+            order_filter = GetOrdersRequest(status=QueryOrderStatus.CLOSED, limit=500)
+            orders = client.get_orders(filter=order_filter)
+
+            # Keep only filled orders with a price, sorted oldest → newest
+            filled = sorted(
+                [o for o in orders if o.filled_avg_price and o.filled_at],
+                key=lambda o: o.filled_at,
+            )
+
+            # FIFO matching per symbol
+            from collections import defaultdict
+            buys = defaultdict(list)   # symbol -> deque of pending buy lots
+            cycles = []
+
+            for o in filled:
+                symbol = o.symbol
+                side = o.side.value if o.side else ""
+                qty = float(o.qty or 0)
+                price = float(o.filled_avg_price)
+                ts = o.filled_at.isoformat()
+
+                if side == "buy":
+                    buys[symbol].append({"qty": qty, "price": price, "time": ts})
+                elif side == "sell":
+                    remaining_sell = qty
+                    while remaining_sell > 0 and buys[symbol]:
+                        lot = buys[symbol][0]
+                        matched = min(lot["qty"], remaining_sell)
+                        pl = round((price - lot["price"]) * matched, 4)
+                        pl_pct = round((price - lot["price"]) / lot["price"] * 100, 2) if lot["price"] else None
+                        cycles.append({
+                            "symbol": symbol,
+                            "buy_time": lot["time"],
+                            "buy_price": lot["price"],
+                            "sell_time": ts,
+                            "sell_price": price,
+                            "qty": matched,
+                            "pl": pl,
+                            "pl_pct": pl_pct,
+                            "status": "closed",
+                        })
+                        lot["qty"] -= matched
+                        remaining_sell -= matched
+                        if lot["qty"] <= 1e-9:
+                            buys[symbol].pop(0)
+
+            # Remaining unmatched buys = still-held positions
+            for symbol, lots in buys.items():
+                for lot in lots:
+                    if lot["qty"] > 1e-9:
+                        cycles.append({
+                            "symbol": symbol,
+                            "buy_time": lot["time"],
+                            "buy_price": lot["price"],
+                            "sell_time": None,
+                            "sell_price": None,
+                            "qty": lot["qty"],
+                            "pl": None,
+                            "pl_pct": None,
+                            "status": "open",
+                        })
+
+            # Most recent first
+            cycles.sort(key=lambda c: c["sell_time"] or c["buy_time"], reverse=True)
+            return jsonify(cycles)
+        except Exception as e:
+            logger.exception("Failed to get trade cycles: %s", e)
+            return jsonify({"error": str(e)}), 500
+
     @app.route("/api/portfolio-history")
     @login_required
     def api_portfolio_history():

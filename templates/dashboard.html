@@ -1161,6 +1161,36 @@
             </div>
         </div>
 
+        <!-- Trade Cycles -->
+        <div class="section">
+            <div class="section-header collapsible" onclick="toggleSection('trade-cycles-body-wrap', this)">
+                <span>Trade Cycles</span>
+                <span class="collapse-chevron">&#9660;</span>
+            </div>
+            <div id="trade-cycles-body-wrap" class="collapsible-body" style="max-height: 0;">
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Qty</th>
+                                <th>Buy Date</th>
+                                <th>Buy Price</th>
+                                <th>Sell Date</th>
+                                <th>Sell Price</th>
+                                <th>P&L</th>
+                                <th>P&L %</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trade-cycles-body">
+                            <tr><td colspan="9" class="empty-state loading">Loading trade cycles...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Trade History -->
         <div class="section">
             <div class="section-header" style="display: flex; align-items: center; justify-content: space-between;">
@@ -1408,6 +1438,41 @@
         function toggleAllOrders() {
             showingAllOrders = !showingAllOrders;
             renderOrders(showingAllOrders ? allOrdersData : allOrdersData.slice(0, ORDERS_PREVIEW));
+        }
+
+        // --- Trade Cycles ---
+        async function refreshTradeCycles() {
+            try {
+                const data = await fetchJSON('/api/trade-cycles');
+                const tbody = document.getElementById('trade-cycles-body');
+                if (!data.length) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No trade cycles found</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.forEach(c => {
+                    const isClosed = c.status === 'closed';
+                    const plClass  = !isClosed ? '' : c.pl >= 0 ? 'positive' : 'negative';
+                    const plSign   = c.pl >= 0 ? '+' : '';
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${c.symbol}</strong></td>
+                        <td>${fmt(c.qty)}</td>
+                        <td style="color:var(--text-dim)">${c.buy_time  ? new Date(c.buy_time).toLocaleString()  : '—'}</td>
+                        <td class="side-buy">$${fmt(c.buy_price)}</td>
+                        <td style="color:var(--text-dim)">${c.sell_time ? new Date(c.sell_time).toLocaleString() : '—'}</td>
+                        <td class="${isClosed ? 'side-sell' : ''}">${isClosed ? '$' + fmt(c.sell_price) : '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td class="${plClass}">${isClosed ? plSign + '$' + fmt(Math.abs(c.pl)) : '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td class="${plClass}">${isClosed ? plSign + c.pl_pct.toFixed(2) + '%' : '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td>${isClosed
+                            ? '<span class="badge badge-sell">Closed</span>'
+                            : '<span class="badge badge-hold">Open</span>'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (e) {
+                console.error('Trade cycles refresh failed:', e);
+            }
         }
 
         async function refreshOrders() {
@@ -2260,6 +2325,7 @@
         refreshSignals();
         refreshPriceTargets();
         refreshOrders();
+        refreshTradeCycles();
         refreshWatchlist();
         refreshIndicators();
         refreshAccounts();
@@ -2274,6 +2340,7 @@
         setInterval(refreshSignals, 60000);
         setInterval(refreshPriceTargets, 60000);
         setInterval(refreshOrders, 60000);
+        setInterval(refreshTradeCycles, 120000);
         setInterval(refreshWatchlist, 60000);
         setInterval(refreshAccounts, 60000);
         setInterval(refreshScreener, 300000);  // screener every 5 min
