@@ -38,7 +38,17 @@ class OrderExecutor:
         account = self.client.get_account()
         equity = float(account.equity)
         positions = self.client.get_positions()
-        existing_position = self.client.get_position(signal.symbol)
+
+        # Build position lookup from the full list rather than calling get_open_position
+        # per-symbol. For crypto (e.g. BTC/USD), the slash in the URL can cause
+        # get_open_position to silently return None even when a position exists,
+        # which defeats the "already holding" guard and triggers duplicate buys.
+        _pos_map = {p.symbol: p for p in positions}
+        existing_position = (
+            _pos_map.get(signal.symbol)
+            # Alpaca sometimes stores crypto without the slash (BTCUSD vs BTC/USD)
+            or _pos_map.get(signal.symbol.replace("/", ""))
+        )
 
         # --- Guard: max positions ---
         if signal.action == Action.BUY and existing_position is None:

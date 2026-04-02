@@ -655,21 +655,24 @@
         }
 
         .table-scroll table th:first-child {
-            background: var(--surface-2);
+            background: var(--surface-2);  /* #111f35 — solid, opaque */
         }
 
         .table-scroll table td:first-child {
-            background: var(--surface);
+            background: var(--surface);    /* #0d1829 — solid, opaque */
         }
 
+        /* Sticky column hover/signal backgrounds MUST be solid (not rgba) so that
+           non-sticky columns scrolling behind the pinned cell don't bleed through. */
         .table-scroll table tr:hover td:first-child {
-            background: rgba(59,130,246,0.04);
+            background: #0f1c31;  /* rgba(59,130,246,0.04) blended over #0d1829 */
         }
 
-        .signal-buy td:first-child  { background: rgba(34,211,122,0.04) !important; }
-        .signal-sell td:first-child { background: rgba(244,96,90,0.04)  !important; }
-        .signal-buy:hover  td:first-child { background: rgba(34,211,122,0.08) !important; }
-        .signal-sell:hover td:first-child { background: rgba(244,96,90,0.08)  !important; }
+        /* signal-buy:  rgba(34,211,122,0.04/0.08) blended over #0d1829 */
+        .table-scroll .signal-buy  td:first-child { background: #0e1f2c !important; }
+        .table-scroll .signal-sell td:first-child { background: #161b2b !important; }
+        .table-scroll .signal-buy:hover  td:first-child { background: #0f272f !important; }
+        .table-scroll .signal-sell:hover td:first-child { background: #1f1e2d !important; }
 
         /* ── Tablet (≤900px) ── */
         @media (max-width: 900px) {
