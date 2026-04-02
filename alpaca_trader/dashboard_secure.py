@@ -438,12 +438,16 @@ def create_app(config=None) -> Flask:
                 return jsonify({"error": "symbol is required"}), 400
             client = get_user_client()
 
-            # Confirm position exists
-            position = client.get_position(symbol)
+            # Confirm position exists. Use full list lookup for crypto — get_open_position
+            # can silently return None for symbols with a slash (e.g. BTC/USD) due to
+            # URL path encoding issues in the SDK.
+            all_positions = client.get_positions()
+            pos_map = {p.symbol: p for p in all_positions}
+            position = pos_map.get(symbol) or pos_map.get(symbol.replace("/", ""))
             if position is None:
                 return jsonify({"error": f"No open position for {symbol}"}), 404
 
-            qty = float(position.qty)
+            qty = float(position.qty_available or position.qty)
             from alpaca.trading.requests import MarketOrderRequest
             from alpaca.trading.enums import OrderSide, TimeInForce
             order_request = MarketOrderRequest(
