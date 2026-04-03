@@ -813,7 +813,7 @@
 
         <!-- Positions -->
         <div class="section">
-            <div class="section-header collapsible" onclick="toggleSection('positions-body-wrap', this)">
+            <div class="section-header collapsible" onclick="toggleSection('positions-body-wrap', this)" data-lazy="refreshPositions">
                 <span>Open Positions</span>
                 <span class="collapse-chevron">&#9660;</span>
             </div>
@@ -842,7 +842,7 @@
 
         <!-- Signals -->
         <div class="section">
-            <div class="section-header collapsible" onclick="toggleSection('signals-body-wrap', this)">
+            <div class="section-header collapsible" onclick="toggleSection('signals-body-wrap', this)" data-lazy="refreshSignals">
                 <span>Live Signals</span>
                 <span class="collapse-chevron">&#9660;</span>
             </div>
@@ -869,7 +869,7 @@
 
         <!-- Price Analysis -->
         <div class="section">
-            <div class="section-header collapsible" onclick="toggleSection('price-targets-body-wrap', this)">
+            <div class="section-header collapsible" onclick="toggleSection('price-targets-body-wrap', this)" data-lazy="refreshPriceTargets">
                 <span>Price Analysis</span>
                 <span class="collapse-chevron">&#9660;</span>
             </div>
@@ -899,7 +899,7 @@
 
         <!-- Watchlist Management -->
         <div class="section">
-            <div class="section-header collapsible" onclick="toggleSection('watchlist-body-wrap', this)">
+            <div class="section-header collapsible" onclick="toggleSection('watchlist-body-wrap', this)" data-lazy="refreshWatchlist">
                 <span>Watchlist Management</span>
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button id="add-symbol-btn" class="btn-primary" style="float: none;" onclick="event.stopPropagation()">+ Add Symbol</button>
@@ -940,7 +940,7 @@
 
         <!-- Market Screener -->
         <div class="section">
-            <div class="section-header collapsible" onclick="toggleSection('screener-body-wrap', this)">
+            <div class="section-header collapsible" onclick="toggleSection('screener-body-wrap', this)" data-lazy="refreshScreener">
                 <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
                     <span>Market Screener</span>
                     <span id="screener-updated" style="font-size:11px; font-weight:400; color:var(--text-muted); text-transform:none; letter-spacing:0;"></span>
@@ -1166,7 +1166,7 @@
 
         <!-- Trade Cycles -->
         <div class="section">
-            <div class="section-header collapsible" onclick="toggleSection('trade-cycles-body-wrap', this)">
+            <div class="section-header collapsible" onclick="toggleSection('trade-cycles-body-wrap', this)" data-lazy="refreshTradeCycles">
                 <span>Trade Cycles</span>
                 <span class="collapse-chevron">&#9660;</span>
             </div>
@@ -1226,6 +1226,7 @@
 
     <script>
         // --- Collapsible Sections ---
+        // Sections with data-lazy="fnName" defer their first data fetch until opened.
         function toggleSection(bodyId, header) {
             const body = document.getElementById(bodyId);
             const chevron = header.querySelector('.collapse-chevron');
@@ -1235,6 +1236,12 @@
                 requestAnimationFrame(() => { body.style.maxHeight = '0'; });
                 chevron.classList.remove('open');
             } else {
+                // Trigger lazy fetch on first open
+                const lazyFn = header.dataset.lazy;
+                if (lazyFn && !header.dataset.lazyLoaded) {
+                    header.dataset.lazyLoaded = '1';
+                    window[lazyFn] && window[lazyFn]();
+                }
                 body.style.maxHeight = body.scrollHeight + 'px';
                 chevron.classList.add('open');
                 body.addEventListener('transitionend', () => {
@@ -2321,20 +2328,36 @@
             }
         }
 
-        // --- Initial load ---
+        // --- Initial load (staggered by priority) ---
+        // P1 — fast, above-the-fold: fire immediately
         refreshAccount();
         refreshScheduler();
-        refreshPositions();
-        refreshSignals();
-        refreshPriceTargets();
-        refreshOrders();
-        refreshTradeCycles();
-        refreshWatchlist();
         refreshIndicators();
         refreshAccounts();
         refreshExecutionSettings();
-        refreshCharts('1M');  // default to 1M on load
-        refreshScreener();
+
+        // P2 — moderate weight: slight delay so P1 responses land first
+        setTimeout(() => {
+            refreshOrders();
+            refreshCharts('1M');
+        }, 150);
+
+        // P3 — heavy (bar fetches, order history, screener): deferred.
+        // These sections are collapsed by default; data-lazy handles them
+        // on first open. We still schedule a background prefetch after 2s
+        // so data is ready if the user expands quickly.
+        setTimeout(() => {
+            refreshPositions();
+            refreshWatchlist();
+        }, 500);
+        setTimeout(() => {
+            refreshSignals();
+            refreshPriceTargets();
+        }, 1000);
+        setTimeout(() => {
+            refreshTradeCycles();
+            refreshScreener();
+        }, 2000);
 
         // --- Auto-refresh intervals ---
         setInterval(refreshAccount, 30000);
