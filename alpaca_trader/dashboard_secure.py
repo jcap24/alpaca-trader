@@ -630,7 +630,7 @@ def create_app(config=None) -> Flask:
         from alpaca.data.requests import MostActivesRequest, MarketMoversRequest
         try:
             client = get_user_client()
-            top = 20
+            top = 10
 
             most_actives = client.screener.get_most_actives(
                 MostActivesRequest(top=top, by="volume")
